@@ -89,6 +89,13 @@ func determineAssetPath() string {
 
 func determineExecutablePath() string {
 	// Get the path this executable is located in
+	pwd, err := os.Getwd()
+	if err == nil {
+		var stat os.FileInfo
+		if stat, err = os.Stat(filepath.Join(pwd, "content")); err == nil && stat.IsDir() {
+			return pwd
+		}
+	}
 	executablePath, err := osext.ExecutableFolder()
 	if err != nil {
 		log.Fatal("Error: Couldn't determine what directory this executable is in:", err)

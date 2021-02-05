@@ -15,17 +15,17 @@
 </nav>
 <div class="container-fluid">
 	<div class="page-header">
-		<h3>Blog</h3>
+		<h3>网站设置</h3>
 	</div>
 	<form class="form-horizontal">
 	    <div class="form-group">
-	        <label for="blog-title" class="col-sm-2 control-label">Title</label>
+	        <label for="blog-title" class="col-sm-2 control-label">标题</label>
 	        <div class="col-sm-4">
 	            <input type="text" class="form-control" id="blog-title" ng-model="shared.blog.Title" value="{{shared.blog.Title}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="blog-description" class="col-sm-2 control-label">Description</label>
+	        <label for="blog-description" class="col-sm-2 control-label">描述</label>
 	        <div class="col-sm-4">
 	            <input spellcheck="true" type="text" class="form-control" id="blog-description" ng-model="shared.blog.Description" value="{{shared.blog.Description}}">
 	        </div>
@@ -37,77 +37,77 @@
 			</div>
 	    </div>
 	    <div class="form-group">
-	        <label for="blog-cover" class="col-sm-2 control-label">Cover</label>
+	        <label for="blog-cover" class="col-sm-2 control-label">主体封面</label>
 	        <div class="col-sm-10">
 	            <a ng-controller="ImageModalCtrl" ng-click="open('lg', 'blog-cover')"><img class="img-settings img-thumbnail img-settings" id="blog-cover" ng-src="{{shared.blog.Cover}}" alt="{{shared.blog.Cover}}" ng-if="shared.blog.Cover!=''" /><img class="img-settings img-thumbnail img-settings" id="blog-cover" src="/public/images/no-image.png" alt="No image" ng-if="shared.blog.Cover==''" /></a>
 			</div>
 	    </div>
 	    <div class="form-group">
-	        <label for="blog-postsperpage" class="col-sm-2 control-label">Posts per page</label>
+	        <label for="blog-postsperpage" class="col-sm-2 control-label">每页显示多少篇文章</label>
 	        <div class="col-sm-2">
 	            <input type="number" class="form-control" id="blog-postsperpage" ng-model="shared.blog.PostsPerPage" value="{{shared.blog.PostsPerPage}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="blog-theme" class="col-sm-2 control-label">Theme</label>
+	        <label for="blog-theme" class="col-sm-2 control-label">主题</label>
 	        <div class="col-sm-2">
 	        	<select class="form-control" id="blog-theme" ng-model="shared.blog.ActiveTheme" ng-options="theme for theme in shared.blog.Themes"></select>
 	        </div>
 	    </div>
 	</form>
 	<div class="page-header">
-		<h3>Navigation</h3>
+		<h3>导航设置</h3>
 	</div>
 	<form class="form-horizontal">
 	    <div class="form-group navigation-item" ng-repeat="navItem in shared.blog.NavigationItems">
 	    	<div class="col-sm-6">
 		    	<div class="row">
-			        <label for="navigation-label" class="col-sm-2 col-sm-offset-2 control-label">Label</label>
+			        <label for="navigation-label" class="col-sm-2 col-sm-offset-2 control-label">标签</label>
 			        <div class="col-sm-8">
 			            <input type="text" class="form-control" ng-model="navItem.label" value="{{navItem.label}}">
 			        </div>
 		    	</div>
 		    	<div class="row">
-			    	<label for="navigation-url" class="col-sm-2 col-sm-offset-2 control-label">Url</label>
+			    	<label for="navigation-url" class="col-sm-2 col-sm-offset-2 control-label">链接</label>
 			        <div class="col-sm-8">
 			            <input evaluate-url type="text" class="form-control" ng-model="navItem.url" value="{{navItem.url}}">
 			        </div>
 		    	</div>
 	    	</div>
 	    	<div class="col-sm-2">
-	    		<button type="button" class="btn btn-danger" id="delete-navigation-row" ng-click="deleteNavItem($index)">− Item</button>
+	    		<button type="button" class="btn btn-danger" id="delete-navigation-row" ng-click="deleteNavItem($index)">− 删除</button>
 	    	</div>
 	    </div>
 	    <div class="form-group">
 	    	<div class="col-sm-2 col-sm-offset-2">
-	    		<button type="button" class="btn btn-success" id="add-navigation-row" ng-click="addNavItem()">+ Item</button>
+	    		<button type="button" class="btn btn-success" id="add-navigation-row" ng-click="addNavItem()">+ 添加</button>
 	    	</div>
 		</div>
 	</form>
 	<div class="page-header">
-		<h3>User {{shared.user.Name}}</h3>
+		<h3>用户设置 - {{shared.user.Name}}</h3>
 	</div>
 	<form class="form-horizontal">
 		<div class="form-group">
-	        <label for="user-name" class="col-sm-2 control-label">Name</label>
+	        <label for="user-name" class="col-sm-2 control-label">用户名</label>
 	        <div class="col-sm-4">
 	            <input type="text" class="form-control" id="user-name" ng-model="shared.user.Name" value="{{shared.user.Name}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-slug" class="col-sm-2 control-label">Slug</label>
+	        <label for="user-slug" class="col-sm-2 control-label">昵称</label>
 	        <div class="col-sm-4">
 	            <input type="text" class="form-control" id="user-slug" ng-model="shared.user.Slug" value="{{shared.user.Slug}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-image" class="col-sm-2 control-label">Avatar</label>
+	        <label for="user-image" class="col-sm-2 control-label">头像</label>
 	        <div class="col-sm-10">
 	            <a ng-controller="ImageModalCtrl" ng-click="open('lg', 'user-image')"><img class="img-settings img-thumbnail img-settings" id="user-image" ng-src="{{shared.user.Image}}" alt="{{shared.user.Image}}" ng-if="shared.user.Image!=''" /><img class="img-settings img-thumbnail img-settings" id="user-image" src="/public/images/no-image.png" alt="No image" ng-if="shared.user.Image==''" /></a>
 			</div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-cover" class="col-sm-2 control-label">Cover</label>
+	        <label for="user-cover" class="col-sm-2 control-label">封面</label>
 	        <div class="col-sm-10">
 	            <a ng-controller="ImageModalCtrl" ng-click="open('lg', 'user-cover')"><img class="img-settings img-thumbnail img-settings" id="user-cover" ng-src="{{shared.user.Cover}}" alt="{{shared.user.Cover}}" ng-if="shared.user.Cover!=''" /><img class="img-settings img-thumbnail img-settings" id="user-cover" src="/public/images/no-image.png" alt="No image" ng-if="shared.user.Cover==''" /></a>
 			</div>
@@ -119,31 +119,31 @@
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-location" class="col-sm-2 control-label">Location</label>
+	        <label for="user-location" class="col-sm-2 control-label">所在地</label>
 	        <div class="col-sm-4">
 	            <input type="text" class="form-control" id="user-location" ng-model="shared.user.Location" value="{{shared.user.Location}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-website" class="col-sm-2 control-label">Website</label>
+	        <label for="user-website" class="col-sm-2 control-label">网站</label>
 	        <div class="col-sm-4">
 	            <input type="text" class="form-control" id="user-website" ng-model="shared.user.Website" value="{{shared.user.Website}}">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="user-bio" class="col-sm-2 control-label">Bio</label>
+	        <label for="user-bio" class="col-sm-2 control-label">自我介绍</label>
 	        <div class="col-sm-4">
 	            <textarea class="form-control" id="user-bio" ng-model="shared.user.Bio" rows="4">{{shared.user.Bio}}</textarea>
 	        </div>
 	    </div>
 	    <div class="form-group">
-	        <label for="new-password" class="col-sm-2 control-label">New Password</label>
+	        <label for="new-password" class="col-sm-2 control-label">新密码</label>
 	        <div class="col-sm-4">
 	            <input type="password" class="form-control" id="new-password" ng-model="shared.user.Password">
 	        </div>
 	    </div>
 	    <div class="form-group">
-	    	<label for="new-password-repeated" class="col-sm-2 control-label">Repeat New Password</label>
+	    	<label for="new-password-repeated" class="col-sm-2 control-label">重复输入新密码</label>
 	        <div class="col-sm-4">
 	            <input type="password" class="form-control" id="new-password-repeated" ng-model="shared.user.PasswordRepeated">
 	            <p class="text-danger" id="password-match-status">&nbsp;</p>
@@ -154,7 +154,7 @@
 <div class="navbar navbar-default navbar-fixed-bottom">
 	<div class="container-fluid">
 		<form class="navbar-form save-button-navbar" role="form">
-			<button type="button" class="btn btn-primary" id="settings-save-button" ng-click="save()">Save</button>
+			<button type="button" class="btn btn-primary" id="settings-save-button" ng-click="save()">保存</button>
 		</form>
 	</div>
 </div>

@@ -99,7 +99,7 @@ adminApp.factory('infiniteScrollFactory', function($http) {
 
 adminApp.controller('ContentCtrl', function ($scope, $http, $sce, $location, infiniteScrollFactory, sharingService){
   //change the navbar according to controller
-  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li class="active"><a href="#/">Content<span class="sr-only">(current)</span></a></li><li><a href="#/create/">New Post</a></li><li><a href="#/settings/">Settings</a></li><li><a href="logout/" class="logout">( Log Out )</a></li></ul>');
+  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li class="active"><a href="#/">文章<span class="sr-only">(当前)</span></a></li><li><a href="#/create/">新建文章</a></li><li><a href="#/settings/">设置</a></li><li><a href="logout/" class="logout">( 退出 )</a></li></ul>');
   $scope.infiniteScrollFactory = new infiniteScrollFactory('/admin/api/posts/');
   $scope.openPost = function(postId) {
     $location.url('/edit/' + postId);
@@ -120,7 +120,7 @@ adminApp.controller('ContentCtrl', function ($scope, $http, $sce, $location, inf
 
 adminApp.controller('SettingsCtrl', function ($scope, $http, $timeout, $sce, $location, sharingService){
   //change the navbar according to controller
-  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">Content</a></li><li><a href="#/create/">New Post</a></li><li class="active"><a href="#/settings/">Settings<span class="sr-only">(current)</span></a></li><li><a href="logout/" class="logout">( Log Out )</a></li></ul>');
+  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">文章</a></li><li><a href="#/create/">新建文章</a></li><li class="active"><a href="#/settings/">设置<span class="sr-only">(current)</span></a></li><li><a href="logout/" class="logout">( 退出 )</a></li></ul>');
   $scope.shared = sharingService.shared;
   //variable to hold the field prefix
   $scope.prefix = '';
@@ -163,7 +163,7 @@ adminApp.controller('SettingsCtrl', function ($scope, $http, $timeout, $sce, $lo
     if (url.slice(-1) != '/') {
       url = url + '/';
     }
-    $scope.shared.blog['NavigationItems'].push({label: 'Home', url: url});
+    $scope.shared.blog['NavigationItems'].push({label: '主页', url: url});
   };
   $scope.save = function() {
     $http.patch('/admin/api/blog', $scope.shared.blog);
@@ -177,9 +177,9 @@ adminApp.controller('CreateCtrl', function ($scope, $http, $sce, $location, shar
   //create markdown converter
   var converter = new showdown.Converter({extensions: ['footnotes'], ghCodeBlocks: true, simplifiedAutoLink: true, strikethrough: true, tables: true});
   //change the navbar according to controller
-  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">Content</a></li><li class="active"><a href="#/create/">New Post<span class="sr-only">(current)</span></a></li><li><a href="#/settings/">Settings</a></li><li><a href="logout/" class="logout">( Log Out )</a></li></ul>');
+  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">文章</a></li><li class="active"><a href="#/create/">新建文章<span class="sr-only">(当前)</span></a></li><li><a href="#/settings/">设置</a></li><li><a href="logout/" class="logout">( 退出 )</a></li></ul>');
   $scope.shared = sharingService.shared;
-  $scope.shared.post = {Title: 'New Post', Slug: '', Markdown: 'Write something!', IsPublished: false, Image: '', Tags: ''}
+  $scope.shared.post = {Title: '文章标题', Slug: '', Markdown: '文章内容（ Markdown 格式）', IsPublished: false, Image: '', Tags: ''}
   $scope.change = function() {
     document.getElementById('html-div').innerHTML = '<h1>' + $scope.shared.post.Title + '</h1><br>' + converter.makeHtml($scope.shared.post.Markdown);
     //resize the markdown textarea
@@ -198,7 +198,7 @@ adminApp.controller('EditCtrl', function ($scope, $routeParams, $http, $sce, $lo
   //create markdown converter
   var converter = new showdown.Converter({extensions: ['footnotes'], ghCodeBlocks: true, simplifiedAutoLink: true, strikethrough: true, tables: true});
   //change the navbar according to controller
-  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">Content</a></li><li><a href="#/create/">New Post</a></li><li><a href="#/settings/">Settings</a></li><li><a href="logout/" class="logout">( Log Out )</a></li></ul>');
+  $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">文章</a></li><li><a href="#/create/">新建文章</a></li><li><a href="#/settings/">设置</a></li><li><a href="logout/" class="logout">( 退出 )</a></li></ul>');
   $scope.shared = sharingService.shared;
   $scope.shared.post = {}
   $scope.change = function() {
