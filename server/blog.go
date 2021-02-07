@@ -2,7 +2,9 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -125,6 +127,11 @@ func postHandler(w http.ResponseWriter, r *http.Request, params map[string]strin
 
 	// Render post template
 	err := templates.ShowPostTemplate(w, r, slug)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		http.Error(w, "Post Not found.", http.StatusNotFound)
+		return
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -168,9 +175,35 @@ func publicHandler(w http.ResponseWriter, r *http.Request, params map[string]str
 	return
 }
 
+func faviconHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	ex, err := os.Executable()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	iconPath := filepath.Join(filepath.Dir(ex), "favicon.ico")
+	if _, err = os.Stat(iconPath); os.IsNotExist(err) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("404 File not found."))
+		return
+	}
+
+	file, err := os.OpenFile(iconPath, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	defer file.Close()
+
+	_, _ = io.Copy(w, file)
+}
+
 func InitializeBlog(router *httptreemux.TreeMux) {
 	// For index
 	router.GET("/", indexHandler)
+	router.GET("/favicon.ico", faviconHandler)
 	router.GET("/:slug/edit", postEditHandler)
 	router.GET("/:slug/", postHandler)
 	router.GET("/page/:number/", indexHandler)
