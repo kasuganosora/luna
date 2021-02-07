@@ -88,3 +88,5 @@ Temporary Items
 .idea
 /build/
 !/build/.gitkeep
+/content/themes/promenade/node_modules/
+/content/themes/promenade/package-lock.json

@@ -7,3 +7,4 @@ build:
 	cp -R built-in build/built-in
 	mkdir -p build/content/themes/promenade
 	cp -R content/themes/promenade build/content/themes/promenade
+	cp config.json build/config.json
