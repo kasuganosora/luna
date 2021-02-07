@@ -12,6 +12,7 @@
 
     {{! Styles }}
     <link rel="stylesheet" type="text/css" href="/assets/css/normalize.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/font_awesome.css" />
     <link rel="stylesheet" type="text/css" href="/assets/css/style.css" />
 
     {{! Responsive Meta Tags }}
@@ -30,17 +31,11 @@
                 <h1 class="sidebar_title">{{@blog.title}}</h1>
             </div>
             <div class="sidebar_symbols">
-                <a href="http://www.github.com" target="_blank" title="GitHub"><i class="fa fa-github-square fa-lg sidebar_symbol github_symbol"></i></a>
-                <a href="http://www.twitter.com" target="_blank" title="Twitter"><i class="fa fa-twitter-square fa-lg sidebar_symbol twitter_symbol"></i></a>
-                <a href="http://www.linkedin.com" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-square fa-lg sidebar_symbol linkedin_symbol"></i></a>
-                <a href="http://www.youtube.com" target="_blank" title="YouTube"><i class="fa fa-youtube-square fa-lg sidebar_symbol youtube_symbol"></i></a>
-                <a href="http://www.xing.com" target="_blank" title="Xing"><i class="fa fa-xing-square fa-lg sidebar_symbol xing_symbol"></i></a>
-                <a href="http://www.flickr.com" target="_blank" title="Flickr"><i class="fa fa-flickr fa-lg sidebar_symbol flickr_symbol"></i></a>
                 <a href="/rss/" target="_blank" title="Subscribe"><i class="fa fa-rss-square fa-lg sidebar_symbol rss_symbol"></i></a>
             </div>
-            <h2 class="sidebar_link"><a href="/">Blog</a></h2>
-            <h2 class="sidebar_link"><a href="/about">About</a></h2>
-            <h2 class="sidebar_link"><a href="/projects">Projects</a></h2>
+            {{#foreach navigation}}
+                <h2 class="sidebar_link"><a href="{{url absolute="true"}}">{{label}}</a></h2>
+            {{/foreach}}
         </div>
     </header>
     {{{body}}}
