@@ -614,26 +614,36 @@ func contentFunc(helper *structure.Helper, values *structure.RequestData) []byte
 	return values.Posts[values.CurrentPostIndex].Html
 }
 
+// 处理列表内的内容
 func excerptFunc(helper *structure.Helper, values *structure.RequestData) []byte {
 	if values.CurrentHelperContext == 1 { // post
 		if len(helper.Arguments) != 0 {
 			arguments := methods.ProcessHelperArguments(helper.Arguments)
 			for key, value := range arguments {
+
+				var content []byte
+				if len(values.Posts[values.CurrentPostIndex].MetaDescription) > 0 {
+					content = values.Posts[values.CurrentPostIndex].MetaDescription
+				} else {
+					content = values.Posts[values.CurrentPostIndex].Html
+				}
+
+				content = conversion.StripTagsFromHtml(content)
+
 				if key == "words" {
 					number, err := strconv.Atoi(value)
 					if err == nil {
-						excerpt := conversion.StripTagsFromHtml(values.Posts[values.CurrentPostIndex].Html)
-						words := bytes.Fields(excerpt)
+						words := bytes.Fields(content)
 						if len(words) < number {
-							return excerpt
+							return content
 						}
-						return bytes.Join(words[:number], []byte(" "))
+						return bytes.Join(words[:number], []byte("..."))
 					}
 				} else if key == "characters" {
 					number, err := strconv.Atoi(value)
 					if err == nil {
 						// Use runes for UTF-8 support
-						runes := []rune(string(conversion.StripTagsFromHtml(values.Posts[values.CurrentPostIndex].Html)))
+						runes := []rune(string(content))
 						if len(runes) < number {
 							return []byte(string(runes))
 						}
