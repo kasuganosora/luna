@@ -2,26 +2,25 @@ package scheme
 
 import (
 	"database/sql"
-	"github.com/jackc/pgtype/ext/gofrs-uuid"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
 )
 
 type Post struct {
-	gorm.Model
-	ID              uint           `gorm:"primaryKey,autoIncrement" json:"id"`
-	UUID            uuid.UUID      `gorm:"type:uuid,uniqueIndex" json:"uuid"`
-	Title           string         `json:"title"`
-	Slug            sql.NullString `json:"slug"`
-	Markdown        string         `gorm:"type:text" json:"markdown"`
-	HTML            string         `gorm:"type:text,column:html" json:"html"`
+	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	UUID            uuid.UUID      `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
+	Title           string         `gorm:"type:varchar(255); not null" json:"title"`
+	Slug            sql.NullString `gorm:"type:varchar(255)" json:"slug"`
+	Markdown        string         `gorm:"type:longtext" json:"markdown"`
+	HTML            string         `gorm:"type:longtext;column:html" json:"html"`
 	Image           string         `gorm:"type:text" json:"image"`
-	Featured        int            `gorm:"type:tinyint not NULL,default:'0'" json:"featured"`
-	Page            uint           `gorm:"type:tinyint not NULL,default:'0'" json:"page"`
-	Status          string         `gorm:"type:varchar(150) not NULL,default:'draft'" json:"status"`
-	Language        string         `gorm:"type:varchar(20) not NULL,default:'en_US'" json:"language"`
-	MetaTitle       sql.NullString `json:"meta_title"`
-	MetaDescription sql.NullString `json:"meta_description"`
+	Featured        int            `gorm:"type:tinyint;not null;default:0" json:"featured"`
+	Page            uint           `gorm:"type:tinyint;not null;default:0" json:"page"`
+	Status          string         `gorm:"type:varchar(150);not null;default:draft; index" json:"status"`
+	Language        string         `gorm:"type:varchar(20);not null;default:en_US'" json:"language"`
+	MetaTitle       sql.NullString `gorm:"type:varchar(150);" json:"meta_title"`
+	MetaDescription sql.NullString `gorm:"type:text" json:"meta_description"`
 	AuthorID        int            `gorm:"not null" json:"author_id"`
 	Author          *User          `gorm:"foreignKey:AuthorID"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime" json:"created_at"`
@@ -34,7 +33,7 @@ type Post struct {
 	PublishedBy     sql.NullInt64  `json:"published_by"`
 	PublishedUser   *User          `gorm:"foreignKey:PublishedBy"`
 	ScheduleTime    *sql.NullTime  `json:"schedule_time"`
-	DeletedAt       gorm.DeletedAt `json:"deleted_at,omitempty"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 	Tags            []*Tag         `gorm:"many2many:posts_tags"`
 }
 

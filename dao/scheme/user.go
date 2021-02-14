@@ -2,38 +2,38 @@ package scheme
 
 import (
 	"database/sql"
-	uuid "github.com/jackc/pgtype/ext/gofrs-uuid"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
 )
 
 type User struct {
-	gorm.Model
-	ID              uint           `gorm:"primaryKey,autoIncrement" json:"id"`
-	UUID            uuid.UUID      `gorm:"type:uuid,uniqueIndex" json:"uuid"`
-	Name            string         `json:"name"`
-	Slug            string         `json:"slug"`
-	Password        string         `json:"-"`
-	PasswordSalt    string         `json:"-"`
-	Email           string         `json:"email"`
-	Image           string         `json:"image"`
-	Cover           string         `json:"cover"`
-	BIO             string         `json:"bio"`
-	Website         string         `json:"website"`
-	Location        string         `json:"location"`
-	Accessibility   string         `json:"accessibility"`
-	Status          string         `json:"status"`
-	Language        string         `json:"language"`
-	MetaTitle       sql.NullString `json:"meta_title"`
-	MetaDescription sql.NullString `json:"meta_description"`
+	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
+	UUID            uuid.UUID      `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
+	Name            string         `gorm:"type:varchar(150)" json:"name"`
+	Slug            string         `gorm:"type:varchar(255)" json:"slug"`
+	Password        string         `gorm:"type:varchar(255)" json:"-"`
+	PasswordSalt    string         `gorm:"type:varchar(255)" json:"-"`
+	Email           string         `gorm:"type:varchar(255)" json:"email"`
+	Image           string         `gorm:"type:text" json:"image"`
+	Cover           string         `gorm:"type:text" json:"cover"`
+	BIO             string         `gorm:"type:varchar(255)" json:"bio"`
+	Website         string         `gorm:"type:varchar(255)" json:"website"`
+	Location        string         `gorm:"type:text" json:"location"`
+	Accessibility   string         `gorm:"type:text" json:"accessibility"`
+	Status          string         `gorm:"type:varchar(160); not null; default:active" json:"status"`
+	Language        string         `gorm:"type:varchar(6); not null; default:en_US" json:"language"`
+	MetaTitle       sql.NullString `gorm:"type:varchar(150);" json:"meta_title"`
+	MetaDescription sql.NullString `gorm:"type:text" json:"meta_description"`
 	LastLogin       sql.NullTime   `json:"last_login"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	CreatedBy       sql.NullInt64  `gorm:"not null" json:"created_by"`
+	CreatedBy       sql.NullInt64  `json:"-"`
 	CreatedUser     *User          `gorm:"foreignKey:CreatedBy"`
 	UpdatedAt       sql.NullTime   `gorm:"autoUpdateTime" json:"updated_at"`
-	UpdatedBy       sql.NullInt64  `json:"updated_by"`
-	UpdatedUser     *User          `gorm:"foreignKey:UpdatedBy"`
-	Roles           []*Role        `gorm:"many2many:roles_users;"`
+	UpdatedBy       sql.NullInt64  `json:"-"`
+	UpdatedUser     *User          `gorm:"foreignKey:UpdatedBy" json:"updated_user"`
+	Roles           []*Role        `gorm:"many2many:roles_users" json:"roles"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (User) TableName() string {
