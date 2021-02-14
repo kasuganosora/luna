@@ -35,6 +35,7 @@ type Post struct {
 	PublishedUser   *User          `gorm:"foreignKey:PublishedBy"`
 	ScheduleTime    *sql.NullTime  `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `json:"deleted_at,omitempty"`
+	Tags            []*Tag         `gorm:"many2many:posts_tags"`
 }
 
 func (Post) TableName() string {
