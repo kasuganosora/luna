@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/dimfeld/httptreemux v3.7.1-0.20170114182716-9cde5e866f4d+incompatible
+	github.com/elliotchance/pie v1.38.1 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/securecookie v0.0.0-20150820082958-e95799a481bb
