@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"github.com/gorilla/securecookie"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
@@ -9,7 +10,7 @@ var cookieHandler = securecookie.New(
 	securecookie.GenerateRandomKey(64),
 	securecookie.GenerateRandomKey(32))
 
-func SetSession(userName string, response http.ResponseWriter) {
+func SetSession(c echo.Context, userName string) {
 	value := map[string]string{
 		"name": userName,
 	}
@@ -19,12 +20,12 @@ func SetSession(userName string, response http.ResponseWriter) {
 			Value: encoded,
 			Path:  "/admin/",
 		}
-		http.SetCookie(response, cookie)
+		c.SetCookie(cookie)
 	}
 }
 
-func GetUserName(request *http.Request) (userName string) {
-	if cookie, err := request.Cookie("session"); err == nil {
+func GetUserName(c echo.Context) (userName string) {
+	if cookie, err := c.Cookie("session"); err == nil {
 		cookieValue := make(map[string]string)
 		if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
 			userName = cookieValue["name"]
@@ -33,12 +34,12 @@ func GetUserName(request *http.Request) (userName string) {
 	return userName
 }
 
-func ClearSession(response http.ResponseWriter) {
+func ClearSession(c echo.Context) {
 	cookie := &http.Cookie{
 		Name:   "session",
 		Value:  "",
 		Path:   "/admin/",
 		MaxAge: -1,
 	}
-	http.SetCookie(response, cookie)
+	c.SetCookie(cookie)
 }

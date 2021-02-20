@@ -1,26 +1,27 @@
 package server
 
 import (
-	"github.com/dimfeld/httptreemux"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/helpers"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"path/filepath"
 	"strings"
 )
 
-func pagesHandler(w http.ResponseWriter, r *http.Request, params map[string]string) {
-	path := filepath.Join(filenames.PagesFilepath, params["filepath"])
+func pagesHandler(c echo.Context) (err error) {
+	path := filepath.Join(filenames.PagesFilepath, c.Param("filepath"))
 	// If the path points to a directory, add a trailing slash to the path (needed if the page loads relative assets).
-	if helpers.IsDirectory(path) && !strings.HasSuffix(r.RequestURI, "/") {
-		http.Redirect(w, r, r.RequestURI+"/", 301)
+	if helpers.IsDirectory(path) && !strings.HasSuffix(c.Request().RequestURI, "/") {
+		err = c.Redirect(http.StatusMovedPermanently, c.Request().RequestURI+"/")
 		return
 	}
-	http.ServeFile(w, r, path)
+	err = c.File(path)
+
 	return
 }
 
-func InitializePages(router *httptreemux.TreeMux) {
+func InitializePages(router *echo.Echo) {
 	// For serving standalone projects or pages saved in in content/pages
-	router.GET("/pages/*filepath", pagesHandler)
+	router.GET("/pages/:filepath", pagesHandler)
 }
