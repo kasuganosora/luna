@@ -15,7 +15,9 @@ require (
 	github.com/labstack/echo/v4 v4.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6
-	github.com/russross/blackfriday v0.0.0-20160531111224-1d6b8e9301e7
+	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/russross/blackfriday v1.6.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
 	github.com/stretchr/testify v1.7.0

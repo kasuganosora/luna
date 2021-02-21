@@ -3,6 +3,7 @@ package scheme
 import (
 	"database/sql"
 	"github.com/google/uuid"
+	"github.com/mitchellh/mapstructure"
 	"gorm.io/gorm"
 	"time"
 )
@@ -34,9 +35,16 @@ type Post struct {
 	PublishedUser   *User          `gorm:"foreignKey:PublishedBy"`
 	ScheduleTime    *sql.NullTime  `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-	Tags            []*Tag         `gorm:"many2many:posts_tags"`
+	Tags            Tags           `gorm:"many2many:posts_tags"`
 }
 
 func (Post) TableName() string {
 	return "posts"
 }
+
+func (p *Post) FillFromMap(data map[string]interface{}) (err error) {
+	return mapstructure.Decode(data, p)
+}
+
+//go:generate pie Posts.*
+type Posts []*Post
