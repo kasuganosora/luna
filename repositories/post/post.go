@@ -12,6 +12,7 @@ import (
 )
 
 var ErrTagsTypeError = errors.New("tags type error")
+var ErrPostNotExists = errors.New("post not exists")
 
 /*
 func InsertPost(title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, created_at time.Time, created_by int64) (int64, error) {
@@ -61,9 +62,15 @@ func UpdatePost(db *gorm.DB, postOrPostID interface{}, data map[string]interface
 	if v, ok := postOrPostID.(*scheme.Post); ok {
 		post = v
 	} else if v, ok := postOrPostID.(int64); ok {
+		post = &scheme.Post{}
 		if err = db.First(post, v).Error; err != nil {
+			post = nil
 			return
 		}
+	}
+
+	if post == nil {
+		return
 	}
 
 	if err = post.FillFromMap(data); err != nil {
@@ -99,6 +106,7 @@ func DeletePost(db *gorm.DB, postOrPostID interface{}) (err error) {
 	}
 
 	if post == nil {
+		err = ErrPostNotExists
 		return
 	}
 
@@ -189,17 +197,51 @@ func GetPostBy(db *gorm.DB, slug string) (post *scheme.Post, err error) {
 	return
 }
 
-func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int64) (posts scheme.Posts, total int64, err error) {
+func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int, orderBy interface{}) (posts scheme.Posts, total int64, err error) {
 	query := db.Model(scheme.Post{})
 
 	for key, val := range conditions {
 		switch key {
 		case "keyword":
-			query = query.Where("title like %?%", val.(string))
+			query = query.Where("(title like %?% or slug like %?%)", val.(string), val.(string))
 		case "tags":
-			//query = query.w
+			var tags []string
+			if v, ok := val.([]string); ok {
+				tags = v
+			}
+
+			if v, ok := val.(string); ok {
+				tags = strings.Split(v, ";")
+			}
+
+			if len(tags) > 0 {
+				query = query.Preload("Tags", "name in ?", tags)
+			}
+
+		case "slug":
+			query = query.Where("slug = ?", val.(string))
+		case "user":
+			query = query.Preload("Author", "name = ? ", val.(string))
 		}
 	}
-	// TODO ...
+
+	if err = query.Count(&total).Error; err != nil {
+		return
+	}
+
+	if orderBy != nil {
+		query = query.Order(orderBy)
+	}
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	if start > 0 {
+		query = query.Offset(start)
+	}
+
+	err = query.Find(&posts).Error
+
 	return
 }

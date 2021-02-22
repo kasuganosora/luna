@@ -10,7 +10,7 @@ import (
 
 type Post struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
-	UUID            uuid.UUID      `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
+	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Title           string         `gorm:"type:varchar(255); not null" json:"title"`
 	Slug            sql.NullString `gorm:"type:varchar(255)" json:"slug"`
 	Markdown        string         `gorm:"type:longtext" json:"markdown"`
@@ -44,6 +44,19 @@ func (Post) TableName() string {
 
 func (p *Post) FillFromMap(data map[string]interface{}) (err error) {
 	return mapstructure.Decode(data, p)
+}
+
+func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
+	if p.UUID == nil {
+		postUUID := uuid.New()
+		p.UUID = &postUUID
+	}
+	return
+}
+
+func (p *Post) BeforeDelete(tx *gorm.DB) (err error) {
+	err = tx.Model(p).Association("Tag").Clear()
+	return
 }
 
 //go:generate pie Posts.*
