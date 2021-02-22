@@ -54,10 +54,5 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (p *Post) BeforeDelete(tx *gorm.DB) (err error) {
-	err = tx.Model(p).Association("Tag").Clear()
-	return
-}
-
 //go:generate pie Posts.*
 type Posts []*Post

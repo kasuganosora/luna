@@ -160,6 +160,10 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}) (err error) {
 		if tagObj, exists = optTagsNameKeyMapping[tag]; !exists {
 			tagObj = &scheme.Tag{}
 			tagObj.Name = tag
+			if err = db.Create(tagObj).Error; err != nil {
+				return
+			}
+			optTagsNameKeyMapping[tag] = tagObj
 		}
 		newTagsObj[i] = tagObj
 	}
@@ -245,3 +249,5 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 
 	return
 }
+
+//func GetTagsPostsID(db *gorm.DB, tagsName interface{}, resultLimit)
