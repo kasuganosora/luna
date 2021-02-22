@@ -3,12 +3,13 @@ package scheme
 import (
 	"database/sql"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"time"
 )
 
 type Tag struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
-	UUID            uuid.UUID      `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
+	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Name            string         `gorm:"type:varchar(64);uniqueIndex" json:"name"`
 	Slug            string         `gorm:"type:varchar(255)" json:"slug"`
 	Description     string         `gorm:"type:text" json:"description"`
@@ -27,6 +28,14 @@ type Tag struct {
 
 func (Tag) TableName() string {
 	return "tags"
+}
+
+func (t *Tag) BeforeCreate(tx *gorm.DB) (err error) {
+	if t.UUID == nil {
+		tagUUID := uuid.New()
+		t.UUID = &tagUUID
+	}
+	return
 }
 
 //go:generate pie Tags.*

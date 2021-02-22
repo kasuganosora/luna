@@ -9,7 +9,7 @@ import (
 
 type User struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
-	UUID            uuid.UUID      `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
+	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Name            string         `gorm:"type:varchar(150)" json:"name"`
 	Slug            string         `gorm:"type:varchar(255)" json:"slug"`
 	Password        string         `gorm:"type:varchar(255)" json:"-"`
@@ -38,4 +38,12 @@ type User struct {
 
 func (User) TableName() string {
 	return "users"
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.UUID == nil {
+		userUUID := uuid.New()
+		u.UUID = &userUUID
+	}
+	return
 }

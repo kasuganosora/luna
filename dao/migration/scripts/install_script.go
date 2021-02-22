@@ -25,7 +25,7 @@ func (s *InstallScript) Do(db *gorm.DB) (err error) {
 
 	for _, record := range settingRecords {
 		r := &scheme.Setting{}
-		err = db.Where("key = ?", record.Key).First(&r).Error
+		err = db.Where("`key` = ?", record.Key).First(&r).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			return // unknown error
 		}
@@ -41,6 +41,7 @@ func (s *InstallScript) Do(db *gorm.DB) (err error) {
 	}
 	return
 }
+
 func (s *InstallScript) Rollback(db *gorm.DB) (err error) {
 	err = db.Migrator().DropTable(
 		&scheme.Post{},
@@ -48,6 +49,8 @@ func (s *InstallScript) Rollback(db *gorm.DB) (err error) {
 		&scheme.User{},
 		&scheme.Tag{},
 		&scheme.Setting{},
+		"posts_tags",
+		"roles_users",
 	)
 	return
 }

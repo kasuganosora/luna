@@ -45,8 +45,7 @@ func Do(db *gorm.DB) (err error) {
 	}
 
 	// get last Batch num
-	var lastBatch int64
-	err = db.Model(&scheme.Migration{}).Pluck("MAX(Batch) as _max_batch", &lastBatch).Error
+	lastBatch, err := getLastBatchNum(db)
 	if err != nil {
 		return
 	}
@@ -71,17 +70,13 @@ func Do(db *gorm.DB) (err error) {
 	}
 	return
 }
+
 func Rollback(db *gorm.DB) (err error) {
 	if err = initMigration(db); err != nil {
 		return
 	}
-	var lastBatchNum int64
-	err = db.Model(&scheme.Migration{}).Pluck("MAX(Batch) as _max_batch", &lastBatchNum).Error
-	if err != nil {
-		return
-	}
-
-	if lastBatchNum == 0 {
+	lastBatchNum, err := getLastBatchNum(db)
+	if err != nil || lastBatchNum == 0 {
 		return
 	}
 
@@ -115,5 +110,23 @@ func Rollback(db *gorm.DB) (err error) {
 			return
 		}
 	}
+	return
+}
+
+func getLastBatchNum(db *gorm.DB) (lastBatch int64, err error) {
+	lastRecord := &scheme.Migration{}
+
+	if err = db.Model(&scheme.Migration{}).Order("batch desc").First(lastRecord).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			lastBatch = 0
+			err = nil
+			return
+		} else {
+			return
+		}
+	} else {
+		lastBatch = lastRecord.Batch
+	}
+
 	return
 }
