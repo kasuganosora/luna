@@ -1,6 +1,7 @@
 package conversion
 
 import (
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
 )
 
@@ -27,5 +28,11 @@ const (
 
 func GenerateHtmlFromMarkdown(input []byte) []byte {
 	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
-	return blackfriday.Markdown(input, renderer, extensions)
+	htmlContent := blackfriday.Markdown(input, renderer, extensions)
+	p := bluemonday.UGCPolicy()
+	html := p.Sanitize(
+		string(htmlContent),
+	)
+
+	return []byte(html)
 }

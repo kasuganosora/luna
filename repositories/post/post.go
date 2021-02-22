@@ -46,7 +46,7 @@ func CreatePost(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, er
 		return
 	}
 
-	if tags, ok := data["tags"]; ok {
+	if tags, ok := data["tags_str"]; ok {
 		if err = SetPostTags(db, post, tags); err != nil {
 			return
 		}
@@ -83,7 +83,7 @@ func UpdatePost(db *gorm.DB, postOrPostID interface{}, data map[string]interface
 		return
 	}
 
-	if tags, ok := data["tags"]; ok {
+	if tags, ok := data["tags_str"]; ok {
 		if err = SetPostTags(db, post, tags); err != nil {
 			return
 		}
@@ -126,7 +126,7 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}) (err error) {
 	if _, ok := tags.([]string); ok {
 		_tags = pie.Strings(tags.([]string))
 	} else if v, ok := tags.(string); ok {
-		_tags = strings.Split(v, " ")
+		_tags = strings.Split(v, ";")
 	} else {
 		err = ErrTagsTypeError
 		return
@@ -180,7 +180,7 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}) (err error) {
 	}
 
 	if removeTagsObj.Len() > 0 {
-		if err = db.Model(post).Association("Languages").Delete(removeTagsObj); err != nil {
+		if err = db.Model(post).Association("Tags").Delete(removeTagsObj); err != nil {
 			return
 		}
 	}
