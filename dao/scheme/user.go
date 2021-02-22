@@ -10,7 +10,7 @@ type User struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
 	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Name            string         `gorm:"type:varchar(150)" json:"name"`
-	Slug            string         `gorm:"type:varchar(255)" json:"slug"`
+	Slug            string         `gorm:"type:varchar(255);unique" json:"slug"`
 	Password        string         `gorm:"type:varchar(255)" json:"-"`
 	PasswordSalt    string         `gorm:"type:varchar(255)" json:"-"`
 	Email           string         `gorm:"type:varchar(255)" json:"email"`

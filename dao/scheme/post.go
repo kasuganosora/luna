@@ -12,7 +12,7 @@ type Post struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
 	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Title           string         `gorm:"type:varchar(255); not null" json:"title"`
-	Slug            *string        `gorm:"type:varchar(255)" json:"slug"`
+	Slug            *string        `gorm:"type:varchar(255);unique" json:"slug"`
 	Markdown        string         `gorm:"type:longtext" json:"markdown"`
 	HTML            string         `gorm:"type:longtext;column:html" json:"html"`
 	Image           string         `gorm:"type:text" json:"image"`

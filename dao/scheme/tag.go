@@ -10,7 +10,7 @@ type Tag struct {
 	ID              uint       `gorm:"primaryKey;autoIncrement" json:"id"`
 	UUID            *uuid.UUID `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
 	Name            string     `gorm:"type:varchar(64);uniqueIndex" json:"name"`
-	Slug            string     `gorm:"type:varchar(255)" json:"slug"`
+	Slug            string     `gorm:"type:varchar(255);unique" json:"slug"`
 	Description     string     `gorm:"type:text" json:"description"`
 	ParentID        *uint      `json:"parent_id"`
 	MetaTitle       *string    `gorm:"type:varchar(150);" json:"meta_title"`
