@@ -219,13 +219,31 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 			}
 
 			if len(tags) > 0 {
-				query = query.Preload("Tags", "name in ?", tags)
+				tagConds := db.Model(scheme.Tag{}).
+					Joins("JOIN posts_tags ON posts_tags.tag_id = tags.id").
+					Where("tags.name in ?", tags).
+					Select("posts_tags.post_id")
+				query = query.Where("id in (?)", tagConds)
 			}
 
 		case "slug":
 			query = query.Where("slug = ?", val.(string))
 		case "user":
-			query = query.Preload("Author", "name = ? ", val.(string))
+			var targetUser *scheme.User
+			if u, ok := val.(*scheme.User); ok {
+				val = u
+			}
+			if s, ok := val.(string); ok {
+				err = db.Model(&scheme.Post{}).Where("name = ?", s).First(&targetUser).Error
+				if err != nil {
+					if errors.Is(gorm.ErrRecordNotFound, err) {
+						query = query.Where("1 != 1")
+						break
+					}
+					return
+				}
+			}
+			query = query.Where("author_id = ?", targetUser.ID)
 		}
 	}
 
@@ -249,5 +267,3 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 
 	return
 }
-
-//func GetTagsPostsID(db *gorm.DB, tagsName interface{}, resultLimit)
