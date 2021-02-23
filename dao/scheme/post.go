@@ -1,8 +1,8 @@
 package scheme
 
 import (
-	"database/sql"
 	"github.com/google/uuid"
+	"github.com/kabukky/journey/conversion"
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/gorm"
 	"time"
@@ -22,16 +22,16 @@ type Post struct {
 	Language        string         `gorm:"type:varchar(20);not null;default:en_US'" json:"language"`
 	MetaTitle       *string        `gorm:"type:varchar(150);" json:"meta_title"`
 	MetaDescription *string        `gorm:"type:text" json:"meta_description"`
-	AuthorID        *int64         `json:"author_id"`
+	AuthorID        *uint          `json:"author_id"`
 	Author          *User          `gorm:"foreignKey:AuthorID"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	CreatedBy       *int64         `json:"created_by"`
+	CreatedBy       *uint          `json:"created_by"`
 	CreatedUser     *User          `gorm:"foreignKey:CreatedBy"`
 	UpdatedAt       *time.Time     `gorm:"autoUpdateTime" json:"updated_at"`
-	UpdatedBy       sql.NullInt64  `json:"updated_by"`
+	UpdatedBy       *uint          `json:"updated_by"`
 	UpdatedUser     *User          `gorm:"foreignKey:UpdatedBy"`
 	PublishedAt     *time.Time     `json:"published_at"`
-	PublishedBy     *int64         `json:"published_by"`
+	PublishedBy     *uint          `json:"published_by"`
 	PublishedUser   *User          `gorm:"foreignKey:PublishedBy"`
 	ScheduleTime    *time.Time     `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
@@ -52,6 +52,24 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 		p.UUID = &postUUID
 	}
 	return
+}
+
+func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
+	p.safeStringClean()
+	return
+}
+
+func (p *Post) safeStringClean() {
+	p.Title = conversion.XssFilter(p.Title)
+	p.HTML = conversion.XssFilter(p.HTML)
+	if p.MetaTitle != nil {
+		mt := conversion.XssFilter(*p.MetaTitle)
+		p.MetaTitle = &mt
+	}
+	if p.MetaDescription != nil {
+		md := conversion.XssFilter(*p.MetaDescription)
+		p.MetaDescription = &md
+	}
 }
 
 //go:generate pie Posts.*

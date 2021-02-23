@@ -10,7 +10,7 @@ type InstallScript struct {
 
 func (s *InstallScript) Do(db *gorm.DB) (err error) {
 	// create Tables
-	err = db.AutoMigrate(&scheme.Post{}, &scheme.Role{}, &scheme.User{}, &scheme.Tag{}, &scheme.Setting{})
+	err = db.AutoMigrate(&scheme.Post{}, &scheme.Role{}, &scheme.User{}, &scheme.Tag{}, &scheme.Setting{}, &scheme.File{})
 	if err != nil {
 		return
 	}
@@ -49,6 +49,7 @@ func (s *InstallScript) Rollback(db *gorm.DB) (err error) {
 		&scheme.User{},
 		&scheme.Tag{},
 		&scheme.Setting{},
+		&scheme.File{},
 		"posts_tags",
 		"roles_users",
 	)

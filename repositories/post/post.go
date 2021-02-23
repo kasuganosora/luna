@@ -47,7 +47,7 @@ func CreatePost(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, er
 	}
 
 	if tags, ok := data["tags_str"]; ok {
-		if err = SetPostTags(db, post, tags); err != nil {
+		if err = SetPostTags(db, post, tags, post.AuthorID); err != nil {
 			return
 		}
 	}
@@ -84,7 +84,7 @@ func UpdatePost(db *gorm.DB, postOrPostID interface{}, data map[string]interface
 	}
 
 	if tags, ok := data["tags_str"]; ok {
-		if err = SetPostTags(db, post, tags); err != nil {
+		if err = SetPostTags(db, post, tags, post.UpdatedBy); err != nil {
 			return
 		}
 	}
@@ -114,7 +114,7 @@ func DeletePost(db *gorm.DB, postOrPostID interface{}) (err error) {
 	return
 }
 
-func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}) (err error) {
+func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}, setTagUserID *int64) (err error) {
 	if tags == nil {
 		return
 	}
@@ -158,8 +158,12 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}) (err error) {
 		var tagObj *scheme.Tag
 		var exists bool
 		if tagObj, exists = optTagsNameKeyMapping[tag]; !exists {
+			// tag not exists, now create this
 			tagObj = &scheme.Tag{}
 			tagObj.Name = tag
+			if setTagUserID != nil {
+				tagObj.CreatedBy = setTagUserID
+			}
 			if err = db.Create(tagObj).Error; err != nil {
 				return
 			}

@@ -7,6 +7,7 @@ import (
 	"github.com/kabukky/journey/flags"
 	"github.com/kabukky/journey/logger"
 	"github.com/kabukky/journey/plugins"
+	"github.com/kabukky/journey/repositories/file"
 	"github.com/kabukky/journey/server"
 	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/templates"
@@ -74,6 +75,11 @@ func initComponents() (err error) {
 		// Close LuaPool at the end
 		defer plugins.LuaPool.Shutdown()
 		logger.Info("Plugins loaded.")
+	}
+
+	if err = file.InitFS(); err != nil {
+		logger.Fatal("Error: Couldn't init filesystem:", err)
+		return
 	}
 	return
 }

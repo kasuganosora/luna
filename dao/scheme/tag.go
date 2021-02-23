@@ -16,10 +16,10 @@ type Tag struct {
 	MetaTitle       *string    `gorm:"type:varchar(150);" json:"meta_title"`
 	MetaDescription *string    `gorm:"type:text" json:"meta_description"`
 	CreatedAt       time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	CreatedBy       *int64     `json:"-"`
+	CreatedBy       *uint      `json:"-"`
 	CreatedUser     *User      `gorm:"foreignKey:CreatedBy"`
 	UpdatedAt       *time.Time `gorm:"autoUpdateTime" json:"updated_at"`
-	UpdatedBy       *int64     `json:"-"`
+	UpdatedBy       *uint      `json:"-"`
 	UpdatedUser     *User      `gorm:"foreignKey:UpdatedBy" json:"updated_user"`
 	Posts           Posts      `gorm:"many2many:posts_tags" json:"posts"`
 	Children        Tags       `gorm:"foreignkey:ParentID" json:"children"`
