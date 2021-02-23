@@ -2,6 +2,7 @@ package scripts
 
 import (
 	"github.com/kabukky/journey/dao/scheme"
+	"github.com/kabukky/journey/repositories/setting"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +16,7 @@ func (s *InstallScript) Do(db *gorm.DB) (err error) {
 		return
 	}
 	settingRecords := make([]scheme.Setting, 0)
-	settingRecords = append(settingRecords, scheme.Setting{Key: "Title", Value: "My Blog", Type: "blog"})
+	settingRecords = append(settingRecords, scheme.Setting{Key: "title", Value: "My Blog", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "description", Value: "Just another Blog", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "logo", Value: "/public/images/blog-logo.jpg", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "cover", Value: "/public/images/blog-cover.jpg", Type: "blog"})
@@ -39,6 +40,7 @@ func (s *InstallScript) Do(db *gorm.DB) (err error) {
 			return
 		}
 	}
+	err = setting.LoadCache(db)
 	return
 }
 

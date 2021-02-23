@@ -9,10 +9,13 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"strings"
+	"sync/atomic"
 )
 
 var ErrTagsTypeError = errors.New("tags type error")
 var ErrPostNotExists = errors.New("post not exists")
+
+var totalPostCount int64 = -1
 
 /*
 func InsertPost(title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, created_at time.Time, created_by int64) (int64, error) {
@@ -51,6 +54,7 @@ func CreatePost(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, er
 			return
 		}
 	}
+	err = UpdateTotalPostCountCache(db)
 	return
 }
 
@@ -111,10 +115,13 @@ func DeletePost(db *gorm.DB, postOrPostID interface{}) (err error) {
 	}
 
 	err = db.Delete(post).Error
+	if err == nil {
+		err = UpdateTotalPostCountCache(db)
+	}
 	return
 }
 
-func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}, setTagUserID *int64) (err error) {
+func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}, setTagUserID *uint) (err error) {
 	if tags == nil {
 		return
 	}
@@ -269,5 +276,23 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 
 	err = query.Find(&posts).Error
 
+	return
+}
+
+func UpdateTotalPostCountCache(db *gorm.DB) (err error) {
+	var count int64
+	err = db.Model(&scheme.Post{}).Count(&count).Error
+	atomic.StoreInt64(&totalPostCount, count)
+	return
+}
+
+func GetTotalPostCount(db *gorm.DB) (count int64, err error) {
+	if totalPostCount == -1 {
+		if err = UpdateTotalPostCountCache(db); err != nil {
+			return
+		}
+	}
+
+	count = totalPostCount
 	return
 }
