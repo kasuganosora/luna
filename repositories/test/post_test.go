@@ -26,7 +26,7 @@ abc
 	data["MetaDescription"] = "MetaDescription 内容"
 	data["ScheduleTime"] = time.Now()
 	data["tags_str"] = "test tag1;tag2;tag3"
-	p, err := post.CreatePost(db, data)
+	p, err := post.Create(db, data)
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
 }
@@ -47,7 +47,7 @@ abc
 	data["MetaDescription"] = "MetaDescription 内容"
 	data["ScheduleTime"] = time.Now()
 	data["tags_str"] = "test tag1;tag2;tag3"
-	p, err := post.CreatePost(db, data)
+	p, err := post.Create(db, data)
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
 
@@ -55,7 +55,7 @@ abc
 	updateData["tags_str"] = "tag2;tag3;tag4"
 	updateData["Title"] = "标题已修改"
 
-	p, err = post.UpdatePost(db, p, updateData)
+	p, err = post.Update(db, p, updateData)
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
 }
@@ -86,7 +86,7 @@ abc
 	data["MetaDescription"] = "MetaDescription 内容"
 	data["ScheduleTime"] = time.Now()
 	data["tags_str"] = "test tag1;tag2;tag3"
-	p, err := post.CreatePost(db, data)
+	p, err := post.Create(db, data)
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
 
@@ -94,7 +94,7 @@ abc
 	data["Slug"] = "文章2Slug" + strconv.FormatInt(int64(rand.Intn(1000))+time.Now().Unix(), 10)
 	data["tags_str"] = "tag4"
 
-	p, err = post.CreatePost(db, data)
+	p, err = post.Create(db, data)
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
 

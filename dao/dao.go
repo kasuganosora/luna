@@ -1,23 +1,22 @@
 package dao
 
 import (
+	"github.com/kabukky/journey/repositories/setting"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"os"
 )
 
 var DB *gorm.DB
 
-func init() {
+func InitDao() {
 	var err error
-	DB, err = gorm.Open(mysql.Open(getDbDSN()), &gorm.Config{})
+	dsn, err := setting.GetGlobal("dsn")
+	if err != nil {
+		panic("Get DB DSN error: " + err.Error())
+	}
+	dsnStr := dsn.GetString() + "?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err = gorm.Open(mysql.Open(dsnStr), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-}
-
-func getDbDSN() string {
-	dsn := os.Getenv("DSN")
-	dsn += "?charset=utf8mb4&parseTime=True&loc=Local"
-	return dsn
 }

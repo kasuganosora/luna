@@ -7,6 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/securecookie v0.0.0-20150820082958-e95799a481bb
+	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/kabukky/feeds v0.0.0-20151110114325-c7025aca4568
 	github.com/kabukky/httpscerts v0.0.0-20150320125433-617593d7dcb3
 	github.com/kardianos/osext v0.0.0-20151222153229-29ae4ffbc9a6

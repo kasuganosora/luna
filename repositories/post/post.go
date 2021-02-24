@@ -29,10 +29,10 @@ func RetrievePostsByUser(user_id int64, limit int64, offset int64) ([]structure.
 func RetrievePostsByTag(tag_id int64, limit int64, offset int64) ([]structure.Post, error)   {}
 func RetrievePostsForIndex(limit int64, offset int64) ([]structure.Post, error)              {}
 func RetrievePostsForApi(limit int64, offset int64) ([]structure.Post, error)                {}
-func UpdatePost(id int64, title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, updated_at time.Time, updated_by int64) error {
+func Update(id int64, title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, updated_at time.Time, updated_by int64) error {
 }
 */
-func CreatePost(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, err error) {
+func Create(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, err error) {
 	post = &scheme.Post{}
 	if err = post.FillFromMap(data); err != nil {
 		return
@@ -58,7 +58,7 @@ func CreatePost(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, er
 	return
 }
 
-func UpdatePost(db *gorm.DB, postOrPostID interface{}, data map[string]interface{}) (post *scheme.Post, err error) {
+func Update(db *gorm.DB, postOrPostID interface{}, data map[string]interface{}) (post *scheme.Post, err error) {
 	if db == nil {
 		db = dao.DB.Session(&gorm.Session{})
 	}
@@ -95,7 +95,7 @@ func UpdatePost(db *gorm.DB, postOrPostID interface{}, data map[string]interface
 	return
 }
 
-func DeletePost(db *gorm.DB, postOrPostID interface{}) (err error) {
+func Delete(db *gorm.DB, postOrPostID interface{}) (err error) {
 	var post *scheme.Post
 	if db == nil {
 		db = dao.DB.Session(&gorm.Session{})

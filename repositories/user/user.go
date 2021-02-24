@@ -19,7 +19,7 @@ func UpdateLastLogin(logInDate time.Time, userId int64) error                   
 func UpdateUserPassword(id int64, password string, updated_at time.Time, updated_by int64) error {}
 */
 
-func CreateUser(db *gorm.DB, name string, password string, otherData map[string]interface{}) (user *scheme.User, err error) {
+func Create(db *gorm.DB, name string, password string, otherData map[string]interface{}) (user *scheme.User, err error) {
 	user = &scheme.User{}
 	if otherData != nil {
 		delete(otherData, "UUID")
@@ -39,7 +39,7 @@ func CreateUser(db *gorm.DB, name string, password string, otherData map[string]
 	return
 }
 
-func UpdateUser(db gorm.DB, name string, updateData map[string]interface{}) (user *scheme.User, err error) {
+func Update(db gorm.DB, name string, updateData map[string]interface{}) (user *scheme.User, err error) {
 	err = db.Model(&scheme.User{}).Where("name = ?", name).First(&user).Error
 	if err != nil {
 		return
@@ -68,7 +68,7 @@ func UpdateUser(db gorm.DB, name string, updateData map[string]interface{}) (use
 	return
 }
 
-func DeleteUser(db gorm.DB, userObjOrID interface{}) (err error) {
+func Delete(db gorm.DB, userObjOrID interface{}) (err error) {
 	var user *scheme.User
 	if uid, ok := userObjOrID.(uint); ok {
 		err = db.Model(&scheme.User{}).First(&user, uid).Error

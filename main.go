@@ -2,12 +2,14 @@ package main
 
 import (
 	"github.com/kabukky/journey/configuration"
+	"github.com/kabukky/journey/dao"
 	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/flags"
 	"github.com/kabukky/journey/logger"
 	"github.com/kabukky/journey/plugins"
 	"github.com/kabukky/journey/repositories/file"
+	"github.com/kabukky/journey/repositories/setting"
 	"github.com/kabukky/journey/server"
 	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/templates"
@@ -17,6 +19,16 @@ import (
 )
 
 func main() {
+
+	var err error
+	setting.LoadEnv()
+	dao.InitDao()
+	err = setting.LoadCache(dao.DB)
+	if err != nil {
+		logger.Fatal(err)
+		return
+	}
+
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
