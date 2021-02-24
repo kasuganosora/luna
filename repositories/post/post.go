@@ -215,6 +215,10 @@ func GetPostBySlug(db *gorm.DB, slug string) (post *scheme.Post, err error) {
 func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int64, orderBy interface{}) (posts scheme.Posts, total int64, err error) {
 	query := db.Model(scheme.Post{})
 
+	if conditions == nil {
+		conditions = make(map[string]interface{})
+	}
+
 	for key, val := range conditions {
 		switch key {
 		case "keyword":

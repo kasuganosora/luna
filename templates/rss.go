@@ -3,63 +3,83 @@ package templates
 import (
 	"bytes"
 	"github.com/kabukky/feeds"
-	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/date"
+	"github.com/kabukky/journey/repositories/post"
+	"github.com/kabukky/journey/repositories/setting"
+	tag2 "github.com/kabukky/journey/repositories/tag"
+	"github.com/kabukky/journey/repositories/user"
 	"github.com/kabukky/journey/structure"
-	"github.com/kabukky/journey/structure/methods"
-	"net/http"
+	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
-func ShowIndexRss(writer http.ResponseWriter) error {
+func ShowIndexRss(c echo.Context, db *gorm.DB) (err error) {
 	// Read lock global blog
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
+
 	// 15 posts in rss for now
-	posts, err := database.RetrievePostsForIndex(15, 0)
+	//posts, err := database.RetrievePostsForIndex(15, 0)
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
+
+	posts, _, err := post.GetPostBySearch(db, nil, 0, 15, "")
 	if err != nil {
 		return err
 	}
-	blogData := &structure.RequestData{Posts: posts, Blog: methods.Blog}
+	blogData := &structure.RequestData{Posts: posts, Blog: blog}
 	feed := createFeed(blogData)
-	err = feed.WriteRss(writer)
+	err = feed.WriteRss(c.Response())
 	return err
 }
 
-func ShowTagRss(writer http.ResponseWriter, slug string) error {
+func ShowTagRss(c echo.Context, db *gorm.DB, slug string) (err error) {
 	// Read lock global blog
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
-	tag, err := database.RetrieveTagBySlug(slug)
+
+	blog, err := setting.RetrieveBlog(db)
 	if err != nil {
-		return err
+		return
+	}
+
+	tagObj, err := tag2.GetTagBySlug(db, slug)
+	if err != nil {
+		return
 	}
 	// 15 posts in rss for now
-	posts, err := database.RetrievePostsByTag(tag.Id, 15, 0)
+	conds := make(map[string]interface{})
+	conds["tags"] = tagObj.Name
+	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "")
 	if err != nil {
-		return err
+		return
 	}
-	blogData := &structure.RequestData{Posts: posts, Blog: methods.Blog}
+	blogData := &structure.RequestData{Posts: posts, Blog: blog}
 	feed := createFeed(blogData)
-	err = feed.WriteRss(writer)
+	err = feed.WriteRss(c.Response())
 	return err
 }
 
-func ShowAuthorRss(writer http.ResponseWriter, slug string) error {
-	// Read lock global blog
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
-	author, err := database.RetrieveUserBySlug(slug)
+func ShowAuthorRss(c echo.Context, db *gorm.DB, slug string) (err error) {
+	blog, err := setting.RetrieveBlog(db)
 	if err != nil {
-		return err
+		return
 	}
+
+	author, err := user.GetUserBySlug(db, slug)
+	if err != nil {
+		return
+	}
+
 	// 15 posts in rss for now
-	posts, err := database.RetrievePostsByUser(author.Id, 15, 0)
+	conds := make(map[string]interface{})
+	conds["user"] = author.ID
+	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "")
 	if err != nil {
-		return err
+		return
 	}
-	blogData := &structure.RequestData{Posts: posts, Blog: methods.Blog}
+	blogData := &structure.RequestData{Posts: posts, Blog: blog}
 	feed := createFeed(blogData)
-	err = feed.WriteRss(writer)
+	err = feed.WriteRss(c.Response())
 	return err
 }
 
@@ -77,30 +97,36 @@ func createFeed(values *structure.RequestData) *feeds.Feed {
 		},
 		Url: string(values.Blog.Url) + "/rss/",
 	}
-	for i := 0; i < len(values.Posts); i++ {
-		if values.Posts[i].Id != 0 {
-			// Make link
-			var buffer bytes.Buffer
-			buffer.Write(values.Blog.Url)
-			buffer.WriteString("/")
-			buffer.WriteString(values.Posts[i].Slug)
-			item := &feeds.Item{
-				Title:       string(values.Posts[i].Title),
-				Description: string(values.Posts[i].Html),
-				Link:        &feeds.Link{Href: buffer.String()},
-				Id:          string(values.Posts[i].Uuid),
-				Author:      &feeds.Author{Name: string(values.Posts[i].Author.Name), Email: ""},
-				Created:     *values.Posts[i].Date,
-			}
-			// If the post has a cover image, add it to the item
-			image := string(values.Posts[i].Image)
-			if image != "" {
-				item.Image = &feeds.Image{
-					Url: string(values.Blog.Url) + image,
-				}
-			}
-			feed.Items = append(feed.Items, item)
+
+	for _, postObj := range values.Posts {
+		if postObj.ID <= 0 {
+			continue
 		}
+		// Make link
+		var buffer bytes.Buffer
+		buffer.WriteString(values.Blog.Url)
+		buffer.WriteString("/")
+		if postObj.Slug == nil {
+			continue
+		}
+		buffer.WriteString(*postObj.Slug)
+		item := &feeds.Item{
+			Title:       postObj.Title,
+			Description: postObj.HTML,
+			Link:        &feeds.Link{Href: buffer.String()},
+			Id:          postObj.UUID.String(),
+			Author:      &feeds.Author{Name: string(postObj.Author.Name), Email: ""},
+			Created:     postObj.CreatedAt,
+		}
+
+		image := string(postObj.Image)
+		if image != "" {
+			item.Image = &feeds.Image{
+				Url: string(values.Blog.Url) + image,
+			}
+		}
+		feed.Items = append(feed.Items, item)
+
 	}
 
 	return feed

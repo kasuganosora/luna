@@ -60,7 +60,7 @@ func authorHandler(c echo.Context) (err error) {
 		return
 	} else if function == "rss" {
 		// Render author rss feed
-		err = templates.ShowAuthorRss(c.Response(), slug)
+		err = templates.ShowAuthorRss(c, db, slug)
 		if err != nil {
 			return
 		}
@@ -72,7 +72,7 @@ func authorHandler(c echo.Context) (err error) {
 		return
 	}
 	// Render author template
-	err = templates.ShowAuthorTemplate(c.Response(), c.Request(), slug, page)
+	err = templates.ShowAuthorTemplate(c, db, slug, page)
 	if err != nil {
 		return
 	}
@@ -83,16 +83,20 @@ func tagHandler(c echo.Context) (err error) {
 	slug, _ := url.QueryUnescape(c.Param("slug"))
 	function := c.Param("function")
 	number := c.Param("number")
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	if function == "" {
 		// Render tag template (first page)
-		err = templates.ShowTagTemplate(c.Response(), c.Request(), slug, 1)
+		err = templates.ShowTagTemplate(c, db, slug, 1)
 		if err != nil {
 			return
 		}
 		return
 	} else if function == "rss" {
 		// Render tag rss feed
-		err = templates.ShowTagRss(c.Response(), slug)
+		err = templates.ShowTagRss(c, db, slug)
 		if err != nil {
 			return
 		}
@@ -104,7 +108,7 @@ func tagHandler(c echo.Context) (err error) {
 		return
 	}
 	// Render tag template
-	err = templates.ShowTagTemplate(c.Response(), c.Request(), slug, page)
+	err = templates.ShowTagTemplate(c, db, slug, page)
 	if err != nil {
 		return
 	}
@@ -112,13 +116,15 @@ func tagHandler(c echo.Context) (err error) {
 }
 
 func postHandler(c echo.Context) (err error) {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
 	slug, _ := url.QueryUnescape(c.Param("slug"))
 	if slug == "" {
 		err = c.Redirect(http.StatusFound, "/")
 		return
 	} else if slug == "rss" {
 		// Render index rss feed
-		err = templates.ShowIndexRss(c.Response())
+		err = templates.ShowIndexRss(c, db)
 		if err != nil {
 
 			return
@@ -127,7 +133,7 @@ func postHandler(c echo.Context) (err error) {
 	}
 
 	// Render post template
-	err = templates.ShowPostTemplate(c.Response(), c.Request(), slug)
+	err = templates.ShowPostTemplate(c, db, slug)
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		http.Error(c.Response(), "Post Not found.", http.StatusNotFound)
 		return
