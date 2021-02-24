@@ -3,6 +3,7 @@ package scheme
 import (
 	"github.com/google/uuid"
 	"github.com/kabukky/journey/conversion"
+	"github.com/kabukky/journey/slug"
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/gorm"
 	"time"
@@ -36,6 +37,7 @@ type Post struct {
 	ScheduleTime    *time.Time     `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 	Tags            Tags           `gorm:"many2many:posts_tags"`
+	TagsStr         *[]string      `gorm:"-" json:"tags_str,omitempty"`
 }
 
 func (Post) TableName() string {
@@ -51,11 +53,29 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 		postUUID := uuid.New()
 		p.UUID = &postUUID
 	}
+	p.safeStringClean()
+
+	var slugStr string
+	if p.Slug != nil && *p.Slug != "" {
+		slugStr = slug.Generate(*p.Slug, "posts")
+	} else {
+		slugStr = slug.Generate(p.Title, "posts")
+	}
+	p.Slug = &slugStr
+
 	return
 }
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
 	p.safeStringClean()
+
+	var slugStr string
+	if p.Slug != nil && *p.Slug != "" {
+		slugStr = slug.Generate(*p.Slug, "posts")
+	} else {
+		slugStr = slug.Generate(p.Title, "posts")
+	}
+	p.Slug = &slugStr
 	return
 }
 
@@ -69,6 +89,11 @@ func (p *Post) safeStringClean() {
 	if p.MetaDescription != nil {
 		md := conversion.XssFilter(*p.MetaDescription)
 		p.MetaDescription = &md
+	}
+
+	if p.Slug != nil {
+		slug := conversion.XssFilter(*p.Slug)
+		p.Slug = &slug
 	}
 }
 

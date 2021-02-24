@@ -1,8 +1,14 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/kabukky/journey/dao"
+	"github.com/kabukky/journey/dao/scheme"
 	"github.com/kabukky/journey/logger"
+	"github.com/kabukky/journey/repositories/post"
+	"github.com/kabukky/journey/repositories/setting"
+	"github.com/kabukky/journey/repositories/user"
 	"github.com/labstack/echo/v4"
 	"io"
 	"mime/multipart"
@@ -179,7 +185,7 @@ func adminFileHandler(c echo.Context) (err error) {
 func apiPostsHandler(c echo.Context) (err error) {
 	userName := authentication.GetUserName(c)
 	if userName == "" {
-		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
+		err = c.String(http.StatusUnauthorized, "Not logged in!")
 		return
 	}
 
@@ -191,12 +197,17 @@ func apiPostsHandler(c echo.Context) (err error) {
 	}
 
 	postsPerPage := int64(15)
-	posts, err := database.RetrievePostsForApi(postsPerPage, ((page - 1) * postsPerPage))
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	posts, _, err := post.GetPostBySearch(db, nil, ((page - 1) * postsPerPage), postsPerPage, "")
+
 	if err != nil {
 		return
 	}
 
-	err = c.JSON(http.StatusOK, postsToJson(posts))
+	err = c.JSON(http.StatusOK, posts)
 	return
 
 }
@@ -205,9 +216,11 @@ func apiPostsHandler(c echo.Context) (err error) {
 func getApiPostHandler(c echo.Context) (err error) {
 	userName := authentication.GetUserName(c)
 	if userName == "" {
-		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
+		err = c.String(http.StatusUnauthorized, "Not logged in!")
 		return
 	}
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
 
 	id := c.Param("id")
 	// Get post
@@ -215,44 +228,59 @@ func getApiPostHandler(c echo.Context) (err error) {
 	if err != nil || postId < 1 {
 		return
 	}
-	post, err := database.RetrievePostById(postId)
+	//post, err := database.RetrievePostById(postId)
+	postObj, err := post.GetPostByID(db, uint(postId))
 	if err != nil {
 		return
 	}
 
-	err = c.JSON(http.StatusOK, postToJson(post))
+	err = c.JSON(http.StatusOK, postObj)
 	return
 
 }
 
 // API function to create a post
 func postApiPostHandler(c echo.Context) (err error) {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	userName := authentication.GetUserName(c)
 	if userName == "" {
 		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
 		return
 	}
 
-	userId, err := getUserId(userName)
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
-	// Create post
+
+	data := &scheme.Post{}
 	decoder := json.NewDecoder(c.Request().Body)
-	var postJSON JsonPost
-	err = decoder.Decode(&postJSON)
+	err = decoder.Decode(&data)
 	if err != nil {
 		return
 	}
-	var postSlug string
-	if postJSON.Slug != "" { // Ceck if user has submitted a custom slug
-		postSlug = slug.Generate(postJSON.Slug, "posts")
-	} else {
-		postSlug = slug.Generate(postJSON.Title, "posts")
+
+	savePostData := make(map[string]interface{})
+	savePostData["Title"] = data.Title
+	savePostData["Slug"] = data.Slug
+	savePostData["Markdown"] = data.Markdown
+	savePostData["HTML"] = conversion.GenerateHtmlFromMarkdown([]byte(data.Markdown))
+	savePostData["Featured"] = data.Featured
+	savePostData["Page"] = data.Page
+	savePostData["PublishedAt"] = data.PublishedAt
+	if data.PublishedAt != nil {
+		savePostData["PublishedBy"] = userObj.ID
 	}
-	currentTime := date.GetCurrentTime()
-	post := structure.Post{Title: []byte(postJSON.Title), Slug: postSlug, Markdown: []byte(postJSON.Markdown), Html: conversion.GenerateHtmlFromMarkdown([]byte(postJSON.Markdown)), IsFeatured: postJSON.IsFeatured, IsPage: postJSON.IsPage, IsPublished: postJSON.IsPublished, MetaDescription: []byte(postJSON.MetaDescription), Image: []byte(postJSON.Image), Date: &currentTime, Tags: methods.GenerateTagsFromCommaString(postJSON.Tags), Author: &structure.User{Id: userId}}
-	err = methods.SavePost(&post)
+
+	savePostData["MetaDescription"] = data.MetaDescription
+	savePostData["MetaTitle"] = data.MetaTitle
+	savePostData["Image"] = data.Image
+	savePostData["tags_str"] = data.TagsStr
+	savePostData["AuthorID"] = userObj.ID
+
+	_, err = post.Create(db, savePostData)
 	if err != nil {
 		return
 	}
@@ -264,40 +292,56 @@ func postApiPostHandler(c echo.Context) (err error) {
 
 // API function to update a post.
 func patchApiPostHandler(c echo.Context) (err error) {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	userName := authentication.GetUserName(c)
 	if userName == "" {
 		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
 		return
 	}
 
-	userId, err := getUserId(userName)
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
-	// Update post
+
+	data := &scheme.Post{}
 	decoder := json.NewDecoder(c.Request().Body)
-	var postJSON JsonPost
-	err = decoder.Decode(&postJSON)
+	err = decoder.Decode(&data)
 	if err != nil {
 		return
 	}
-	var postSlug string
-	// Get current slug of post
-	post, err := database.RetrievePostById(postJSON.Id)
+
+	postObj, err := post.GetPostByID(db, data.ID)
 	if err != nil {
 		return
 	}
-	if postJSON.Slug != post.Slug { // Check if user has submitted a custom slug
-		postSlug = slug.Generate(postJSON.Slug, "posts")
-	} else {
-		postSlug = post.Slug
+
+	savePostData := make(map[string]interface{})
+	savePostData["Title"] = data.Title
+	savePostData["Slug"] = data.Slug
+	savePostData["Markdown"] = data.Markdown
+	savePostData["HTML"] = conversion.GenerateHtmlFromMarkdown([]byte(data.Markdown))
+	savePostData["Featured"] = data.Featured
+	savePostData["Page"] = data.Page
+	savePostData["PublishedAt"] = data.PublishedAt
+	if data.PublishedAt != nil {
+		savePostData["PublishedBy"] = userObj.ID
 	}
-	currentTime := date.GetCurrentTime()
-	*post = structure.Post{Id: postJSON.Id, Title: []byte(postJSON.Title), Slug: postSlug, Markdown: []byte(postJSON.Markdown), Html: conversion.GenerateHtmlFromMarkdown([]byte(postJSON.Markdown)), IsFeatured: postJSON.IsFeatured, IsPage: postJSON.IsPage, IsPublished: postJSON.IsPublished, MetaDescription: []byte(postJSON.MetaDescription), Image: []byte(postJSON.Image), Date: &currentTime, Tags: methods.GenerateTagsFromCommaString(postJSON.Tags), Author: &structure.User{Id: userId}}
-	err = methods.UpdatePost(post)
+
+	savePostData["MetaDescription"] = data.MetaDescription
+	savePostData["MetaTitle"] = data.MetaTitle
+	savePostData["Image"] = data.Image
+	savePostData["tags_str"] = data.TagsStr
+	savePostData["UpdatedBy"] = userObj.ID
+	savePostData["UpdatedAt"] = time.Now()
+
+	_, err = post.Update(db, postObj, savePostData)
 	if err != nil {
 		return
 	}
+
 	err = c.String(http.StatusOK, "Post updated!")
 	return
 
@@ -311,6 +355,9 @@ func deleteApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	id := c.Param("id")
 	// Delete post
 	postId, err := strconv.ParseInt(id, 10, 64)
@@ -318,7 +365,7 @@ func deleteApiPostHandler(c echo.Context) (err error) {
 
 		return
 	}
-	err = methods.DeletePost(postId)
+	err = post.Delete(db, uint(postId))
 	if err != nil {
 
 		return
@@ -476,8 +523,16 @@ func getApiBlogHandler(c echo.Context) (err error) {
 		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
 		return
 	}
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
 	// Read lock the global blog
-	blogJson := blogToJson(methods.Blog)
+	blogJson := blogToJson(blog)
 
 	err = c.JSON(http.StatusOK, blogJson)
 	return
@@ -492,7 +547,10 @@ func patchApiBlogHandler(c echo.Context) (err error) {
 		return
 	}
 
-	userId, err := getUserId(userName)
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
@@ -518,15 +576,23 @@ func patchApiBlogHandler(c echo.Context) (err error) {
 			}
 		}
 	}
+
 	// Retrieve old blog settings for comparison
-	blog, err := database.RetrieveBlog()
+	blog, err := setting.RetrieveBlog(db)
 	if err != nil {
 		return
 	}
-	tempBlog := structure.Blog{Url: []byte(configuration.Config.Url), Title: []byte(blogData.Title), Description: []byte(blogData.Description), Logo: []byte(blogData.Logo), Cover: []byte(blogData.Cover), AssetPath: []byte("/assets/"), PostCount: blog.PostCount, PostsPerPage: blogData.PostsPerPage, ActiveTheme: blogData.ActiveTheme, NavigationItems: blogData.NavigationItems}
-	err = methods.UpdateBlog(&tempBlog, userId)
-	// Check if active theme setting has been changed, if so, generate templates from new theme
-	if tempBlog.ActiveTheme != blog.ActiveTheme {
+
+	saveData := make(map[string]interface{})
+	saveData["title"] = conversion.XssFilter(blogData.Title)
+	saveData["description"] = conversion.XssFilter(blogData.Description)
+	saveData["logo"] = conversion.XssFilter(blogData.Logo)
+	saveData["cover"] = conversion.XssFilter(blogData.Cover)
+	saveData["postsPerPage"] = blogData.PostsPerPage
+	saveData["activeTheme"] = blogData.ActiveTheme
+	saveData["navigation"] = blogData.NavigationItems
+
+	if blogData.ActiveTheme != blog.ActiveTheme {
 		err = templates.Generate()
 		if err != nil {
 			// If there's an error while generating the new templates, the whole program must be stopped.
@@ -534,8 +600,12 @@ func patchApiBlogHandler(c echo.Context) (err error) {
 			return
 		}
 	}
-	if err != nil {
-		return
+
+	for k, v := range saveData {
+		err = setting.Set(db, "blog", k, v, userObj)
+		if err != nil {
+			return
+		}
 	}
 
 	err = c.String(http.StatusOK, "Blog settings updated!")
@@ -551,25 +621,24 @@ func getApiUserHandler(c echo.Context) (err error) {
 		return
 	}
 
-	userId, err := getUserId(userName)
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
+
 	id := c.Param("id")
 	userIdToGet, err := strconv.ParseInt(id, 10, 64)
 	if err != nil || userIdToGet < 1 {
 		return
-	} else if userIdToGet != userId { // Make sure the authenticated user is only accessing his/her own data. TODO: Make sure the user is admin when multiple users have been introduced
+	} else if uint(userIdToGet) != userObj.ID { // Make sure the authenticated user is only accessing his/her own data. TODO: Make sure the user is admin when multiple users have been introduced
 		err = c.String(http.StatusForbidden, "You don't have permission to access this data.")
 		return
 	}
-	user, err := database.RetrieveUser(userIdToGet)
-	if err != nil {
 
-		return
-	}
-	userJson := userToJson(user)
-	err = c.JSON(http.StatusOK, userJson)
+	err = c.JSON(http.StatusOK, userObj)
 	return
 
 }
@@ -582,10 +651,31 @@ func patchApiUserHandler(c echo.Context) (err error) {
 		return
 	}
 
-	userId, err := getUserId(userName)
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
+
+	data := &scheme.User{}
+	decoder := json.NewDecoder(c.Request().Body)
+	if err = decoder.Decode(&data); err != nil {
+		return
+	}
+
+	if data.ID < 1 {
+		err = c.String(http.StatusBadRequest, "Wrong user id.")
+		return
+	}
+
+	if data.ID != userObj.ID {
+		// Make sure the authenticated user is only changing his/her own data. TODO: Make sure the user is admin when multiple users have been introduced
+		err = c.String(http.StatusUnauthorized, "You don't have permission to change this data.")
+		return
+	}
+
 	decoder := json.NewDecoder(c.Request().Body)
 	var userData JsonUser
 	err = decoder.Decode(&userData)
@@ -699,7 +789,7 @@ func logInUser(c echo.Context, name string) {
 	}
 }
 
-func postsToJson(posts []structure.Post) *[]JsonPost {
+func postsToJson(posts []*scheme.Post) *[]JsonPost {
 	jsonPosts := make([]JsonPost, len(posts))
 	for index, _ := range posts {
 		jsonPosts[index] = *postToJson(&posts[index])

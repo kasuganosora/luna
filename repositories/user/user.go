@@ -83,17 +83,17 @@ func Delete(db gorm.DB, userObjOrID interface{}) (err error) {
 	return
 }
 
-func GetUserByID(db *gorm.DB, uid uint) (user scheme.User, err error) {
+func GetUserByID(db *gorm.DB, uid uint) (user *scheme.User, err error) {
 	err = db.Model(scheme.User{}).Preload(clause.Associations).First(&user, uid).Error
 	return
 }
 
-func GetUserBySlug(db *gorm.DB, slug string) (user scheme.User, err error) {
+func GetUserBySlug(db *gorm.DB, slug string) (user *scheme.User, err error) {
 	err = db.Model(scheme.User{}).Preload(clause.Associations).Where("slug = ?", slug).First(&user).Error
 	return
 }
 
-func GetUserByName(db *gorm.DB, name string) (user scheme.User, err error) {
+func GetUserByName(db *gorm.DB, name string) (user *scheme.User, err error) {
 	err = db.Model(scheme.User{}).Preload(clause.Associations).Where("name = ?", name).First(&user).Error
 	return
 }

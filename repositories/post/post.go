@@ -202,7 +202,7 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}, setTagUserID 
 	return
 }
 
-func GetPostByID(db *gorm.DB, postID int64) (post *scheme.Post, err error) {
+func GetPostByID(db *gorm.DB, postID uint) (post *scheme.Post, err error) {
 	err = db.Preload(clause.Associations).First(post, postID).Error
 	return
 }

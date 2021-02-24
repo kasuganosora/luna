@@ -20,7 +20,7 @@ func (s *InstallScript) Do(db *gorm.DB) (err error) {
 	settingRecords = append(settingRecords, scheme.Setting{Key: "description", Value: "Just another Blog", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "logo", Value: "/public/images/blog-logo.jpg", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "cover", Value: "/public/images/blog-cover.jpg", Type: "blog"})
-	settingRecords = append(settingRecords, scheme.Setting{Key: "postsPerPage", Value: "5", Type: "blog"})
+	settingRecords = append(settingRecords, scheme.Setting{Key: "postsPerPage", Value: "15", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "activeTheme", Value: "promenade", Type: "blog"})
 	settingRecords = append(settingRecords, scheme.Setting{Key: "navigation", Value: `[{"label":"Home", "url":"/"}]`, Type: "blog"})
 
