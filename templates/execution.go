@@ -3,13 +3,17 @@ package templates
 import (
 	"bytes"
 	"errors"
-	"github.com/kabukky/journey/database"
+	"github.com/kabukky/journey/dao/scheme"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/helpers"
 	"github.com/kabukky/journey/plugins"
+	"github.com/kabukky/journey/repositories/post"
+	"github.com/kabukky/journey/repositories/setting"
+	tag2 "github.com/kabukky/journey/repositories/tag"
+	"github.com/kabukky/journey/repositories/user"
 	"github.com/kabukky/journey/structure"
-	"github.com/kabukky/journey/structure/methods"
-	"net/http"
+	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 	"path/filepath"
 	"sync"
 )
@@ -24,33 +28,38 @@ func newTemplates() *Templates { return &Templates{m: make(map[string]*structure
 // Global compiled templates - thread safe and accessible by all requests
 var compiledTemplates = newTemplates()
 
-func ShowPostTemplate(writer http.ResponseWriter, r *http.Request, slug string) error {
+func ShowPostTemplate(c echo.Context, db *gorm.DB, slug string) (err error) {
 	// Read lock templates and global blog
 	compiledTemplates.RLock()
 	defer compiledTemplates.RUnlock()
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
-	post, err := database.RetrievePostBySlug(slug)
+
+	postObj, err := post.GetPostBySlug(db, slug)
 	if err != nil {
 		return err
-	} else if !post.IsPublished { // Make sure the post is published before rendering it
+	} else if postObj.PublishedAt == nil { // Make sure the post is published before rendering it
 		return errors.New("Post not published.")
 	}
-	requestData := structure.RequestData{Posts: make([]structure.Post, 1), Blog: methods.Blog, CurrentTemplate: 1, CurrentPath: r.URL.Path} // CurrentTemplate = post
-	requestData.Posts[0] = *post
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
+
+	requestData := structure.RequestData{Posts: make([]*scheme.Post, 1), Blog: blog, CurrentTemplate: 1, CurrentPath: c.Path()} // CurrentTemplate = post
+	requestData.Posts[0] = postObj
 	// Check if there's a custom page template available for this slug
 	if template, ok := compiledTemplates.m["page-"+slug]; ok {
-		_, err = writer.Write(executeHelper(template, &requestData, 1)) // context = post
+		_, err = c.Response().Write(executeHelper(template, &requestData, 1)) // context = post
 		return err
 	}
 	// If the post is a page and the page template is available, use the page template
-	if post.IsPage {
+	if postObj.Page {
 		if template, ok := compiledTemplates.m["page"]; ok {
-			_, err = writer.Write(executeHelper(template, &requestData, 1)) // context = post
+			_, err = c.Response().Write(executeHelper(template, &requestData, 1)) // context = post
 			return err
 		}
 	}
-	_, err = writer.Write(executeHelper(compiledTemplates.m["post"], &requestData, 1)) // context = post
+	_, err = c.Response().Write(executeHelper(compiledTemplates.m["post"], &requestData, 1)) // context = post
 	if requestData.PluginVMs != nil {
 		// Put the lua state map back into the pool
 		plugins.LuaPool.Put(requestData.PluginVMs)
@@ -58,29 +67,44 @@ func ShowPostTemplate(writer http.ResponseWriter, r *http.Request, slug string) 
 	return err
 }
 
-func ShowAuthorTemplate(writer http.ResponseWriter, r *http.Request, slug string, page int) error {
+func ShowAuthorTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err error) {
 	// Read lock templates and global blog
 	compiledTemplates.RLock()
 	defer compiledTemplates.RUnlock()
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
+
 	postIndex := int64(page - 1)
 	if postIndex < 0 {
 		postIndex = 0
 	}
-	author, err := database.RetrieveUserBySlug(slug)
+
+	postsPerPage, err := setting.PostsPerPage(db, 10)
+	if err != nil {
+		return
+	}
+
+	author, err := user.GetUserBySlug(db, slug)
 	if err != nil {
 		return err
 	}
-	posts, err := database.RetrievePostsByUser(author.Id, methods.Blog.PostsPerPage, (methods.Blog.PostsPerPage * postIndex))
+
+	conds := make(map[string]interface{})
+	conds["user"] = author
+	posts, _, err := post.GetPostBySearch(db, conds, (postsPerPage * postIndex), postsPerPage, nil)
+
 	if err != nil {
 		return err
 	}
-	requestData := structure.RequestData{Posts: posts, Blog: methods.Blog, CurrentIndexPage: page, CurrentTemplate: 3, CurrentPath: r.URL.Path} // CurrentTemplate = author
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
+
+	requestData := structure.RequestData{Posts: posts, Blog: blog, CurrentIndexPage: page, CurrentTemplate: 3, CurrentPath: c.Path()} // CurrentTemplate = author
 	if template, ok := compiledTemplates.m["author"]; ok {
-		_, err = writer.Write(executeHelper(template, &requestData, 0)) // context = index
+		_, err = c.Response().Write(executeHelper(template, &requestData, 0)) // context = index
 	} else {
-		_, err = writer.Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
+		_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
 	}
 	if requestData.PluginVMs != nil {
 		// Put the lua state map back into the pool
@@ -89,29 +113,43 @@ func ShowAuthorTemplate(writer http.ResponseWriter, r *http.Request, slug string
 	return err
 }
 
-func ShowTagTemplate(writer http.ResponseWriter, r *http.Request, slug string, page int) error {
+func ShowTagTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err error) {
 	// Read lock templates and global blog
 	compiledTemplates.RLock()
 	defer compiledTemplates.RUnlock()
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
+
 	postIndex := int64(page - 1)
 	if postIndex < 0 {
 		postIndex = 0
 	}
-	tag, err := database.RetrieveTagBySlug(slug)
+	tag, err := tag2.GetTagBySlug(db, slug)
 	if err != nil {
 		return err
 	}
-	posts, err := database.RetrievePostsByTag(tag.Id, methods.Blog.PostsPerPage, (methods.Blog.PostsPerPage * postIndex))
+
+	postsPerPage, err := setting.PostsPerPage(db, 10)
+	if err != nil {
+		return
+	}
+
+	conds := make(map[string]interface{})
+	conds["tags"] = tag.Name
+	posts, _, err := post.GetPostBySearch(db, conds, (postsPerPage * postIndex), postsPerPage, nil)
+
 	if err != nil {
 		return err
 	}
-	requestData := structure.RequestData{Posts: posts, Blog: methods.Blog, CurrentIndexPage: page, CurrentTag: tag, CurrentTemplate: 2, CurrentPath: r.URL.Path} // CurrentTemplate = tag
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
+
+	requestData := structure.RequestData{Posts: posts, Blog: blog, CurrentIndexPage: page, CurrentTag: tag, CurrentTemplate: 2, CurrentPath: c.Path()} // CurrentTemplate = tag
 	if template, ok := compiledTemplates.m["tag"]; ok {
-		_, err = writer.Write(executeHelper(template, &requestData, 0)) // context = index
+		_, err = c.Response().Write(executeHelper(template, &requestData, 0)) // context = index
 	} else {
-		_, err = writer.Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
+		_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
 	}
 	if requestData.PluginVMs != nil {
 		// Put the lua state map back into the pool
@@ -120,22 +158,36 @@ func ShowTagTemplate(writer http.ResponseWriter, r *http.Request, slug string, p
 	return err
 }
 
-func ShowIndexTemplate(w http.ResponseWriter, r *http.Request, page int) error {
+func ShowIndexTemplate(c echo.Context, db *gorm.DB, page int) (err error) {
 	// Read lock templates and global blog
 	compiledTemplates.RLock()
 	defer compiledTemplates.RUnlock()
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
+
 	postIndex := int64(page - 1)
 	if postIndex < 0 {
 		postIndex = 0
 	}
-	posts, err := database.RetrievePostsForIndex(methods.Blog.PostsPerPage, (methods.Blog.PostsPerPage * postIndex))
+
+	conds := make(map[string]interface{})
+
+	postsPerPage, err := setting.PostsPerPage(db, 10)
+	if err != nil {
+		return
+	}
+
+	posts, _, err := post.GetPostBySearch(db, conds, (postsPerPage * postIndex), postsPerPage, nil)
 	if err != nil {
 		return err
 	}
-	requestData := structure.RequestData{Posts: posts, Blog: methods.Blog, CurrentIndexPage: page, CurrentTemplate: 0, CurrentPath: r.URL.Path} // CurrentTemplate = index
-	_, err = w.Write(executeHelper(compiledTemplates.m["index"], &requestData, 0))                                                              // context = index
+
+	blog, err := setting.RetrieveBlog(db)
+	if err != nil {
+		return
+	}
+
+	requestData := structure.RequestData{Posts: posts, Blog: blog, CurrentIndexPage: page, CurrentTemplate: 0, CurrentPath: c.Path()} // CurrentTemplate = index
+
+	_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
 	if requestData.PluginVMs != nil {
 		// Put the lua state map back into the pool
 		plugins.LuaPool.Put(requestData.PluginVMs)

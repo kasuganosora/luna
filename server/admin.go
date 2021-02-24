@@ -477,8 +477,6 @@ func getApiBlogHandler(c echo.Context) (err error) {
 		return
 	}
 	// Read lock the global blog
-	methods.Blog.RLock()
-	defer methods.Blog.RUnlock()
 	blogJson := blogToJson(methods.Blog)
 
 	err = c.JSON(http.StatusOK, blogJson)

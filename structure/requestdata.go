@@ -3,15 +3,16 @@
 package structure
 
 import (
+	"github.com/kabukky/journey/dao/scheme"
 	"github.com/yuin/gopher-lua"
 )
 
 // RequestData: used for template/helper execution. Contains data specific to the incoming request.
 type RequestData struct {
 	PluginVMs              map[string]*lua.LState
-	Posts                  []Post
+	Posts                  []*scheme.Post
 	Blog                   *Blog
-	CurrentTag             *Tag
+	CurrentTag             *scheme.Tag
 	CurrentIndexPage       int
 	CurrentPostIndex       int
 	CurrentTagIndex        int

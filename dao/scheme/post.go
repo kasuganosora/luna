@@ -17,7 +17,7 @@ type Post struct {
 	HTML            string         `gorm:"type:longtext;column:html" json:"html"`
 	Image           string         `gorm:"type:text" json:"image"`
 	Featured        int            `gorm:"type:tinyint;not null;default:0" json:"featured"`
-	Page            uint           `gorm:"type:tinyint;not null;default:0" json:"page"`
+	Page            bool           `gorm:"type:tinyint;not null;default:0" json:"page"`
 	Status          string         `gorm:"type:varchar(150);not null;default:draft; index" json:"status"`
 	Language        string         `gorm:"type:varchar(20);not null;default:en_US'" json:"language"`
 	MetaTitle       *string        `gorm:"type:varchar(150);" json:"meta_title"`

@@ -1,7 +1,9 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"github.com/kabukky/journey/dao"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
@@ -18,9 +20,11 @@ import (
 
 func indexHandler(c echo.Context) (err error) {
 	number := c.Param("number")
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
 	if number == "" {
 		// Render index template (first page)
-		err = templates.ShowIndexTemplate(c.Response(), c.Request(), 1)
+		err = templates.ShowIndexTemplate(c, db, 1)
 		if err != nil {
 			return
 		}
@@ -32,7 +36,7 @@ func indexHandler(c echo.Context) (err error) {
 		return
 	}
 	// Render index template
-	err = templates.ShowIndexTemplate(c.Response(), c.Request(), page)
+	err = templates.ShowIndexTemplate(c, db, page)
 	if err != nil {
 		return
 	}
@@ -43,9 +47,13 @@ func authorHandler(c echo.Context) (err error) {
 	slug, _ := url.QueryUnescape(c.Param("slug"))
 	function := c.Param("function")
 	number := c.Param("number")
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	if function == "" {
 		// Render author template (first page)
-		err = templates.ShowAuthorTemplate(c.Response(), c.Request(), slug, 1)
+		err = templates.ShowAuthorTemplate(c, db, slug, 1)
 		if err != nil {
 			return
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/kabukky/journey/date"
 	"github.com/kabukky/journey/slug"
 	"github.com/kabukky/journey/structure"
+	"gorm.io/gorm"
 	"log"
 )
 
@@ -46,24 +47,7 @@ func UpdateActiveTheme(activeTheme string, userId int64) error {
 	return nil
 }
 
-func GenerateBlog() error {
-	// Write lock the global blog
-	if Blog != nil {
-		Blog.Lock()
-		defer Blog.Unlock()
-	}
-	// Generate blog from db
-	blog, err := database.RetrieveBlog()
-	if err != nil {
-		return err
-	}
-	// Add parameters that are not saved in db
-	blog.Url = []byte(configuration.Config.Url)
-	blog.AssetPath = assetPath
-	// Create navigation slugs
-	for index, _ := range blog.NavigationItems {
-		blog.NavigationItems[index].Slug = slug.Generate(blog.NavigationItems[index].Label, "navigation")
-	}
-	Blog = blog
+func GenerateBlog(db *gorm.DB) (err error) {
+
 	return nil
 }

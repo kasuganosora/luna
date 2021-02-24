@@ -198,6 +198,25 @@ func RetrieveBlog(db *gorm.DB) (blog *structure.Blog, err error) {
 	return
 }
 
+func PostsPerPage(db *gorm.DB, defaultVal int64) (val int64, err error) {
+	postsPerPageSetting, err := Get(db, "blog", "postsPerPage")
+	if err != nil && !errors.Is(gorm.ErrRecordNotFound, err) {
+		return
+	}
+	if postsPerPageSetting == nil {
+		val = defaultVal
+		return
+	}
+
+	val, err = postsPerPageSetting.GetInt64()
+	if err != nil {
+		val = defaultVal
+		err = nil
+		return
+	}
+	return
+}
+
 func RetrieveActiveTheme(db *gorm.DB) (setting *scheme.Setting, err error) {
 	return Get(db, "blog", "activeTheme")
 }

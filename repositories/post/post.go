@@ -207,12 +207,12 @@ func GetPostByID(db *gorm.DB, postID int64) (post *scheme.Post, err error) {
 	return
 }
 
-func GetPostBy(db *gorm.DB, slug string) (post *scheme.Post, err error) {
+func GetPostBySlug(db *gorm.DB, slug string) (post *scheme.Post, err error) {
 	err = db.Preload(clause.Associations).Where("slug = ?", slug).First(post).Error
 	return
 }
 
-func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int, orderBy interface{}) (posts scheme.Posts, total int64, err error) {
+func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int64, orderBy interface{}) (posts scheme.Posts, total int64, err error) {
 	query := db.Model(scheme.Post{})
 
 	for key, val := range conditions {
@@ -264,14 +264,16 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 
 	if orderBy != nil {
 		query = query.Order(orderBy)
+	} else {
+		query = query.Order("created_at DESC")
 	}
 
 	if limit > 0 {
-		query = query.Limit(limit)
+		query = query.Limit(int(limit))
 	}
 
 	if start > 0 {
-		query = query.Offset(start)
+		query = query.Offset(int(start))
 	}
 
 	err = query.Find(&posts).Error
