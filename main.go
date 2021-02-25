@@ -11,7 +11,6 @@ import (
 	"github.com/kabukky/journey/repositories/file"
 	"github.com/kabukky/journey/repositories/setting"
 	"github.com/kabukky/journey/server"
-	"github.com/kabukky/journey/templates"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"strings"
@@ -74,11 +73,6 @@ func main() {
 func initComponents() (err error) {
 	if err = database.Initialize(); err != nil {
 		logger.Fatal("Error: Couldn't initialize database:", err)
-		return
-	}
-
-	if err = templates.Generate(); err != nil {
-		logger.Fatal("Error: Couldn't compile templates:", err)
 		return
 	}
 

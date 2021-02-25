@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+const POST_STATUS_DRAFT = "draft"
+const POST_STATUS_PUBLISHED = "published"
+
 type Post struct {
 	ID              uint           `gorm:"primaryKey;autoIncrement" json:"id"`
 	UUID            *uuid.UUID     `gorm:"type:varchar(36);not null;uniqueIndex" json:"uuid"`
@@ -52,14 +55,19 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 		postUUID := uuid.New()
 		p.UUID = &postUUID
 	}
-	p.safeStringClean()
+
+	p.saveEvent(tx)
 
 	return
 }
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
-	p.safeStringClean()
+	p.saveEvent(tx)
 	return
+}
+
+func (p *Post) IsPage() bool {
+	return p.Page
 }
 
 func (p *Post) safeStringClean() {
@@ -77,6 +85,19 @@ func (p *Post) safeStringClean() {
 	if p.Slug != nil {
 		slug := conversion.XssFilter(*p.Slug)
 		p.Slug = &slug
+	}
+}
+
+func (p *Post) saveEvent(tx *gorm.DB) {
+	p.safeStringClean()
+
+	if p.Status == POST_STATUS_PUBLISHED && p.PublishedAt == nil {
+		now := time.Now()
+		p.PublishedAt = &now
+	}
+
+	if p.Status == POST_STATUS_DRAFT {
+		p.PublishedAt = nil
 	}
 }
 

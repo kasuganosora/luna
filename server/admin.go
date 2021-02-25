@@ -574,10 +574,6 @@ func patchApiBlogHandler(c echo.Context) (err error) {
 	}
 
 	// Retrieve old blog settings for comparison
-	blog, err := setting.RetrieveBlog(db)
-	if err != nil {
-		return
-	}
 
 	saveData := make(map[string]interface{})
 	saveData["title"] = conversion.XssFilter(blogData.Title)
@@ -587,15 +583,6 @@ func patchApiBlogHandler(c echo.Context) (err error) {
 	saveData["postsPerPage"] = blogData.PostsPerPage
 	saveData["activeTheme"] = blogData.ActiveTheme
 	saveData["navigation"] = blogData.NavigationItems
-
-	if blogData.ActiveTheme != blog.ActiveTheme {
-		err = templates.Generate()
-		if err != nil {
-			// If there's an error while generating the new templates, the whole program must be stopped.
-			logger.Fatal("Fatal error: Template data couldn't be generated from theme files: " + err.Error())
-			return
-		}
-	}
 
 	for k, v := range saveData {
 		err = setting.Set(db, "blog", k, v, userObj)
