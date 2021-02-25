@@ -7,11 +7,16 @@ import (
 
 var DB *gorm.DB
 
-func InitDao(dsn string) {
+func InitDao(dsn string, isDebugMode bool) {
 	var err error
 
 	dsnStr := dsn + "?charset=utf8mb4&parseTime=True&loc=Local"
 	DB, err = gorm.Open(mysql.Open(dsnStr), &gorm.Config{})
+
+	if isDebugMode && err == nil {
+		DB = DB.Debug()
+	}
+
 	if err != nil {
 		panic(err)
 	}

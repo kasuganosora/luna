@@ -213,6 +213,18 @@ func UpdateActiveTheme(db *gorm.DB, themeName string, user *scheme.User) (err er
 	return Set(db, "blog", "activeTheme", themeName, user)
 }
 
+func IsDebugMode() bool {
+	setting, err := GetGlobal("is_in_dev_mode")
+	if err != nil {
+		return false
+	}
+	b, err := setting.GetBool()
+	if err != nil {
+		return false
+	}
+	return b
+}
+
 func LoadEnv() {
 	envs := os.Environ()
 	for _, ev := range envs {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kabukky/journey/dao"
+	"github.com/kabukky/journey/repositories/post"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/templates"
 )
@@ -151,15 +151,18 @@ func postEditHandler(c echo.Context) (err error) {
 		_ = c.Redirect(http.StatusFound, "/")
 		return
 	}
-	// Redirect to edit
-	post, err := database.RetrievePostBySlug(slug)
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	postObj, err := post.GetPostBySlug(db, slug)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
-	url := fmt.Sprintf("/admin/#/edit/%d", post.Id)
-	_ = c.Redirect(http.StatusTemporaryRedirect, url)
+	urlStr := fmt.Sprintf("/admin/#/edit/%d", postObj.ID)
+	_ = c.Redirect(http.StatusTemporaryRedirect, urlStr)
 	return
 }
 

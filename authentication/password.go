@@ -1,27 +1,23 @@
 package authentication
 
 import (
-	"github.com/kabukky/journey/database"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/kabukky/journey/dao"
+	"github.com/kabukky/journey/logger"
+	"github.com/kabukky/journey/repositories/user"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
 )
 
 func LoginIsCorrect(name string, password string) bool {
-	hashedPassword, err := database.RetrieveHashedPasswordForUser([]byte(name))
-	if len(hashedPassword) == 0 || err != nil { // len(hashedPassword) == 0 probably not needed.
-		// User name likely doesn't exist
-		return false
+	userObj, err := user.GetUserByName(dao.DB, name)
+	if err != nil && !errors.Is(gorm.ErrRecordNotFound, err) {
+		logger.Error("LoginIsCorrect has error: %v", err)
 	}
-	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
-	if err != nil {
-		return false
-	}
-	return true
-}
 
-func EncryptPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	ok, err := userObj.ComparePassword(password)
 	if err != nil {
-		return "", err
+		logger.Error("LoginIsCorrect has error: %v", err)
 	}
-	return string(hashedPassword), nil
+
+	return ok
 }

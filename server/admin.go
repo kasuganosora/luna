@@ -23,7 +23,6 @@ import (
 
 	"github.com/kabukky/journey/authentication"
 	"github.com/kabukky/journey/conversion"
-	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/date"
 	"github.com/kabukky/journey/filenames"
 
@@ -83,7 +82,14 @@ type JsonImage struct {
 
 // Function to serve the login page
 func getLoginHandler(c echo.Context) (err error) {
-	if database.RetrieveUsersCount() == 0 {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+	count, err := user.UsersCount(db)
+	if err != nil {
+		return
+	}
+
+	if count == 0 {
 		err = c.Redirect(http.StatusFound, "/admin/register/")
 		return
 	}
@@ -108,7 +114,14 @@ func postLoginHandler(c echo.Context) (err error) {
 
 // Function to serve the registration form
 func getRegistrationHandler(c echo.Context) (err error) {
-	if database.RetrieveUsersCount() == 0 {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+	count, err := user.UsersCount(db)
+	if err != nil {
+		return
+	}
+
+	if count == 0 {
 		err = c.File(filepath.Join(filenames.AdminFilepath, "registration.html"))
 		return
 	}
@@ -121,7 +134,12 @@ func postRegistrationHandler(c echo.Context) (err error) {
 	ctx := context.Background()
 	db := dao.DB.WithContext(ctx)
 
-	if database.RetrieveUsersCount() == 0 { // TODO: Or check if authenticated user is admin when adding users from inside the admin area
+	count, err := user.UsersCount(db)
+	if err != nil {
+		return
+	}
+
+	if count == 0 { // TODO: Or check if authenticated user is admin when adding users from inside the admin area
 		name := c.FormValue("name")
 		email := c.FormValue("email")
 		password := c.FormValue("password")
@@ -151,7 +169,14 @@ func logoutHandler(c echo.Context) (err error) {
 
 // Function to route the /admin/ url accordingly. (Is user logged in? Is at least one user registered?)
 func adminHandler(c echo.Context) (err error) {
-	if database.RetrieveUsersCount() == 0 {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+	count, err := user.UsersCount(db)
+	if err != nil {
+		return
+	}
+
+	if count == 0 {
 		err = c.Redirect(http.StatusFound, "/admin/register/")
 		return
 	}

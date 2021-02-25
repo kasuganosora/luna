@@ -4,7 +4,6 @@ import (
 	"github.com/kabukky/journey/configuration"
 	"github.com/kabukky/journey/dao"
 	"github.com/kabukky/journey/dao/scheme"
-	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/flags"
 	"github.com/kabukky/journey/logger"
@@ -25,7 +24,7 @@ func main() {
 		panic("Get DB DSN error: " + err.Error())
 	}
 
-	dao.InitDao(dsn.GetString())
+	dao.InitDao(dsn.GetString(), setting.IsDebugMode())
 	err = setting.LoadCache(dao.DB)
 	if err != nil {
 		logger.Fatal(err)
@@ -71,10 +70,6 @@ func main() {
 }
 
 func initComponents() (err error) {
-	if err = database.Initialize(); err != nil {
-		logger.Fatal("Error: Couldn't initialize database:", err)
-		return
-	}
 
 	//if err = plugins.Load(); err == nil {
 	//	// Close LuaPool at the end
