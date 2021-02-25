@@ -271,7 +271,8 @@ func getEnvFile() (filename string, err error) {
 		return
 	}
 	envFileName := filepath.Join(pwd, ".env")
-	if stat, err := os.Stat(envFileName); err == nil && !stat.IsDir() {
+	var stat os.FileInfo
+	if stat, err = os.Stat(envFileName); err == nil && !stat.IsDir() {
 		filename = envFileName
 		return
 	}
@@ -281,7 +282,7 @@ func getEnvFile() (filename string, err error) {
 		return
 	}
 	envFileName = filepath.Join(filepath.Dir(binPath), ".env")
-	if stat, err := os.Stat(envFileName); err == nil && !stat.IsDir() {
+	if stat, err = os.Stat(envFileName); err == nil && !stat.IsDir() {
 		filename = envFileName
 		return
 	}

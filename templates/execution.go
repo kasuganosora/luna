@@ -6,7 +6,6 @@ import (
 	"github.com/kabukky/journey/dao/scheme"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/helpers"
-	"github.com/kabukky/journey/plugins"
 	"github.com/kabukky/journey/repositories/post"
 	"github.com/kabukky/journey/repositories/setting"
 	tag2 "github.com/kabukky/journey/repositories/tag"
@@ -60,10 +59,7 @@ func ShowPostTemplate(c echo.Context, db *gorm.DB, slug string) (err error) {
 		}
 	}
 	_, err = c.Response().Write(executeHelper(compiledTemplates.m["post"], &requestData, 1)) // context = post
-	if requestData.PluginVMs != nil {
-		// Put the lua state map back into the pool
-		plugins.LuaPool.Put(requestData.PluginVMs)
-	}
+
 	return err
 }
 
@@ -106,10 +102,7 @@ func ShowAuthorTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err
 	} else {
 		_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
 	}
-	if requestData.PluginVMs != nil {
-		// Put the lua state map back into the pool
-		plugins.LuaPool.Put(requestData.PluginVMs)
-	}
+
 	return err
 }
 
@@ -151,10 +144,7 @@ func ShowTagTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err er
 	} else {
 		_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
 	}
-	if requestData.PluginVMs != nil {
-		// Put the lua state map back into the pool
-		plugins.LuaPool.Put(requestData.PluginVMs)
-	}
+
 	return err
 }
 
@@ -188,10 +178,6 @@ func ShowIndexTemplate(c echo.Context, db *gorm.DB, page int) (err error) {
 	requestData := structure.RequestData{Posts: posts, Blog: blog, CurrentIndexPage: page, CurrentTemplate: 0, CurrentPath: c.Path()} // CurrentTemplate = index
 
 	_, err = c.Response().Write(executeHelper(compiledTemplates.m["index"], &requestData, 0)) // context = index
-	if requestData.PluginVMs != nil {
-		// Put the lua state map back into the pool
-		plugins.LuaPool.Put(requestData.PluginVMs)
-	}
 	return err
 }
 

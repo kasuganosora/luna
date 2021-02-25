@@ -3,7 +3,6 @@ package scheme
 import (
 	"github.com/google/uuid"
 	"github.com/kabukky/journey/conversion"
-	"github.com/kabukky/journey/slug"
 	"github.com/mitchellh/mapstructure"
 	"gorm.io/gorm"
 	"time"
@@ -55,27 +54,11 @@ func (p *Post) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 	p.safeStringClean()
 
-	var slugStr string
-	if p.Slug != nil && *p.Slug != "" {
-		slugStr = slug.Generate(*p.Slug, "posts")
-	} else {
-		slugStr = slug.Generate(p.Title, "posts")
-	}
-	p.Slug = &slugStr
-
 	return
 }
 
 func (p *Post) BeforeUpdate(tx *gorm.DB) (err error) {
 	p.safeStringClean()
-
-	var slugStr string
-	if p.Slug != nil && *p.Slug != "" {
-		slugStr = slug.Generate(*p.Slug, "posts")
-	} else {
-		slugStr = slug.Generate(p.Title, "posts")
-	}
-	p.Slug = &slugStr
 	return
 }
 

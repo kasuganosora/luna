@@ -3,13 +3,13 @@ package templates
 import (
 	"bytes"
 	"errors"
+	"github.com/kabukky/journey/dao"
 	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/flags"
 	"github.com/kabukky/journey/helpers"
-	"github.com/kabukky/journey/plugins"
+	"github.com/kabukky/journey/repositories/setting"
 	"github.com/kabukky/journey/structure"
-	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/watcher"
 	"io/ioutil"
 	"log"
@@ -248,6 +248,8 @@ func compileTheme(themePath string) error {
 }
 
 func checkThemes() error {
+	db := dao.DB
+
 	// Get currently set theme from database
 	activeTheme, err := database.RetrieveActiveTheme()
 	if err != nil {
@@ -262,7 +264,7 @@ func checkThemes() error {
 	err = compileTheme(filepath.Join(filenames.ThemesFilepath, "promenade"))
 	if err == nil {
 		// Update the theme name in the database
-		err = methods.UpdateActiveTheme("promenade", 1)
+		err = setting.UpdateActiveTheme(db, "promenade", nil)
 		if err != nil {
 			return err
 		}
@@ -274,7 +276,7 @@ func checkThemes() error {
 		err = compileTheme(filepath.Join(filenames.ThemesFilepath, theme))
 		if err == nil {
 			// Update the theme name in the database
-			err = methods.UpdateActiveTheme(theme, 1)
+			err = setting.UpdateActiveTheme(db, theme, nil)
 			if err != nil {
 				return err
 			}
@@ -304,7 +306,7 @@ func Generate() error {
 		}
 		currentThemePath := filepath.Join(filenames.ThemesFilepath, *activeTheme)
 		// Create watcher
-		err = watcher.Watch([]string{currentThemePath, filenames.PluginsFilepath}, map[string]func() error{".hbs": Generate, ".lua": plugins.Load})
+		err = watcher.Watch([]string{currentThemePath, filenames.PluginsFilepath}, map[string]func() error{".hbs": Generate})
 		if err != nil {
 			return err
 		}

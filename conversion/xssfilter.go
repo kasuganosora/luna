@@ -10,6 +10,11 @@ func XssFilter(str string) string {
 	ret := p.Sanitize(
 		str,
 	)
+	return strings.TrimSpace(ret)
+}
 
+func StripTagsFromHTML(str string) string {
+	p := bluemonday.StripTagsPolicy()
+	ret := p.Sanitize(str)
 	return strings.TrimSpace(ret)
 }

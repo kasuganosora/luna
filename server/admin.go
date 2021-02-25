@@ -10,6 +10,8 @@ import (
 	"github.com/kabukky/journey/repositories/setting"
 	"github.com/kabukky/journey/repositories/user"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
+	"gorm.io/gorm"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -20,14 +22,12 @@ import (
 	"time"
 
 	"github.com/kabukky/journey/authentication"
-	"github.com/kabukky/journey/configuration"
 	"github.com/kabukky/journey/conversion"
 	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/date"
 	"github.com/kabukky/journey/filenames"
-	"github.com/kabukky/journey/slug"
+
 	"github.com/kabukky/journey/structure"
-	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/templates"
 	"github.com/satori/go.uuid"
 )
@@ -74,7 +74,7 @@ type JsonUser struct {
 }
 
 type JsonUserId struct {
-	Id int64
+	Id uint
 }
 
 type JsonImage struct {
@@ -118,25 +118,21 @@ func getRegistrationHandler(c echo.Context) (err error) {
 
 // Function to recieve a registration form.
 func postRegistrationHandler(c echo.Context) (err error) {
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
 	if database.RetrieveUsersCount() == 0 { // TODO: Or check if authenticated user is admin when adding users from inside the admin area
 		name := c.FormValue("name")
 		email := c.FormValue("email")
 		password := c.FormValue("password")
 
-		var hashedPassword string
-		if name != "" && password != "" {
-			hashedPassword, err = authentication.EncryptPassword(password)
-			if err != nil {
-				return
-			}
-			user := structure.User{Name: []byte(name), Slug: slug.Generate(name, "users"), Email: []byte(email), Image: []byte(filenames.DefaultUserImageFilename), Cover: []byte(filenames.DefaultUserCoverFilename), Role: 4}
-			err = methods.SaveUser(&user, hashedPassword, 1)
-			if err != nil {
-				return
-			}
-			err = c.Redirect(http.StatusFound, "/admin/")
-			return
+		otherData := make(map[string]interface{})
+		otherData["Email"] = email
+		_, err = user.Create(db, name, password, otherData)
+		if err != nil {
+			logger.Error("Create User Error %v", err)
 		}
+
 		err = c.Redirect(http.StatusFound, "/admin/")
 		return
 	} else {
@@ -676,74 +672,58 @@ func patchApiUserHandler(c echo.Context) (err error) {
 		return
 	}
 
-	decoder := json.NewDecoder(c.Request().Body)
-	var userData JsonUser
-	err = decoder.Decode(&userData)
-	if err != nil {
-		return
-	}
-	// Make sure user id is over 0
-	if userData.Id < 1 {
-		err = c.String(http.StatusBadRequest, "Wrong user id.")
-		return
-	} else if userId != userData.Id { // Make sure the authenticated user is only changing his/her own data. TODO: Make sure the user is admin when multiple users have been introduced
-		err = c.String(http.StatusUnauthorized, "You don't have permission to change this data.")
-		return
-	}
-	// Get old user data to compare
-	tempUser, err := database.RetrieveUser(userData.Id)
-	if err != nil {
-		return
-	}
-	// Make sure user email is provided
-	if userData.Email == "" {
-		userData.Email = string(tempUser.Email)
-	}
-	// Make sure user name is provided
-	if userData.Name == "" {
-		userData.Name = string(tempUser.Name)
-	}
-	// Make sure user slug is provided
-	if userData.Slug == "" {
-		userData.Slug = tempUser.Slug
-	}
+	updateData := make(map[string]interface{})
+	var checkUser *scheme.User
 	// Check if new name is already taken
-	if userData.Name != string(tempUser.Name) {
-		_, err = database.RetrieveUserByName([]byte(userData.Name))
-		if err == nil {
-			// The new user name is already taken. Assign the old name.
-			// TODO: Return error that will be displayed in the admin interface.
-			userData.Name = string(tempUser.Name)
+	if data.Name != "" {
+		if data.Name != userObj.Name {
+			checkUser, err = user.GetUserByName(db, data.Name)
+			if err == nil && !errors.Is(gorm.ErrRecordNotFound, err) {
+				return
+			}
+			if checkUser != nil && checkUser.ID != data.ID {
+				err = c.String(http.StatusBadRequest, "User name already token.")
+				return
+			}
 		}
+		updateData["Name"] = data.Name
 	}
+
 	// Check if new slug is already taken
-	if userData.Slug != tempUser.Slug {
-		_, err = database.RetrieveUserBySlug(userData.Slug)
-		if err == nil {
-			// The new user slug is already taken. Assign the old slug.
-			// TODO: Return error that will be displayed in the admin interface.
-			userData.Slug = tempUser.Slug
+	if data.Slug != "" {
+		if data.Slug != userObj.Slug {
+			checkUser, err = user.GetUserBySlug(db, data.Slug)
+			if err == nil && !errors.Is(gorm.ErrRecordNotFound, err) {
+				return
+			}
+			if checkUser != nil && checkUser.ID != data.ID {
+				err = c.String(http.StatusBadRequest, "User slug already token.")
+				return
+			}
 		}
+		updateData["Slug"] = data.Slug
 	}
-	user := structure.User{Id: userData.Id, Name: []byte(userData.Name), Slug: userData.Slug, Email: []byte(userData.Email), Image: []byte(userData.Image), Cover: []byte(userData.Cover), Bio: []byte(userData.Bio), Website: []byte(userData.Website), Location: []byte(userData.Location)}
-	err = methods.UpdateUser(&user, userId)
+
+	if data.Password != "" {
+		updateData["Password"] = data.Password
+
+	}
+
+	updateData["Email"] = data.Email
+	updateData["Image"] = data.Image
+	updateData["Cover"] = conversion.StripTagsFromHTML(data.BIO)
+	updateData["Website"] = conversion.StripTagsFromHTML(data.Website)
+	updateData["Location"] = conversion.StripTagsFromHTML(data.Location)
+	updateData["UpdatedBy"] = userObj.ID
+
+	newUser, err := user.Update(db, data, updateData)
 	if err != nil {
 		return
 	}
-	if userData.Password != "" && (userData.Password == userData.PasswordRepeated) { // Update password if a new one was submitted
-		var encryptedPassword string
-		encryptedPassword, err = authentication.EncryptPassword(userData.Password)
-		if err != nil {
-			return
-		}
-		err = database.UpdateUserPassword(user.Id, encryptedPassword, date.GetCurrentTime(), userData.Id)
-		if err != nil {
-			return
-		}
-	}
+
 	// Check if the user name was changed. If so, update the session cookie to the new user name.
-	if userData.Name != string(tempUser.Name) {
-		logInUser(c, userData.Name)
+	if newUser.Name != userObj.Name && newUser.ID == userObj.ID {
+		logInUser(c, newUser.Name)
 	}
 
 	err = c.String(http.StatusOK, "User settings updated!")
@@ -759,91 +739,50 @@ func getApiUserIdHandler(c echo.Context) (err error) {
 		return
 	}
 
-	userId, err := getUserId(userName)
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	userObj, err := user.GetUserByName(db, userName)
 	if err != nil {
 		return
 	}
-	jsonUserId := JsonUserId{Id: userId}
+
+	jsonUserId := JsonUserId{Id: userObj.ID}
 	err = c.JSON(http.StatusOK, jsonUserId)
 	return
 
 }
 
-func getUserId(userName string) (int64, error) {
-	user, err := database.RetrieveUserByName([]byte(userName))
-	if err != nil {
-		return 0, err
-	}
-	return user.Id, nil
-}
-
 func logInUser(c echo.Context, name string) {
 	authentication.SetSession(c, name)
-	userId, err := getUserId(name)
+
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+
+	userObj, err := user.GetUserByName(db, name)
 	if err != nil {
 		logger.Error("Couldn't get id of logged in user:", err)
+		return
 	}
-	err = database.UpdateLastLogin(date.GetCurrentTime(), userId)
+
+	err = userObj.UpdateLastLogin(db, c.RealIP(), time.Now())
 	if err != nil {
 		logger.Error("Couldn't update last login date of a user:", err)
 	}
 }
 
-func postsToJson(posts []*scheme.Post) *[]JsonPost {
-	jsonPosts := make([]JsonPost, len(posts))
-	for index, _ := range posts {
-		jsonPosts[index] = *postToJson(&posts[index])
-	}
-	return &jsonPosts
-}
-
-func postToJson(post *structure.Post) *JsonPost {
-	var jsonPost JsonPost
-	jsonPost.Id = post.Id
-	jsonPost.Title = string(post.Title)
-	jsonPost.Slug = post.Slug
-	jsonPost.Markdown = string(post.Markdown)
-	jsonPost.Html = string(post.Html)
-	jsonPost.IsFeatured = post.IsFeatured
-	jsonPost.IsPage = post.IsPage
-	jsonPost.IsPublished = post.IsPublished
-	jsonPost.MetaDescription = string(post.MetaDescription)
-	jsonPost.Image = string(post.Image)
-	jsonPost.Date = post.Date
-	tags := make([]string, len(post.Tags))
-	for index, _ := range post.Tags {
-		tags[index] = string(post.Tags[index].Name)
-	}
-	jsonPost.Tags = strings.Join(tags, ",")
-	return &jsonPost
-}
-
 func blogToJson(blog *structure.Blog) *JsonBlog {
 	var jsonBlog JsonBlog
-	jsonBlog.Url = string(blog.Url)
-	jsonBlog.Title = string(blog.Title)
-	jsonBlog.Description = string(blog.Description)
-	jsonBlog.Logo = string(blog.Logo)
-	jsonBlog.Cover = string(blog.Cover)
+	jsonBlog.Url = blog.Url
+	jsonBlog.Title = blog.Title
+	jsonBlog.Description = blog.Description
+	jsonBlog.Logo = blog.Logo
+	jsonBlog.Cover = blog.Cover
 	jsonBlog.PostsPerPage = blog.PostsPerPage
 	jsonBlog.Themes = templates.GetAllThemes()
 	jsonBlog.ActiveTheme = blog.ActiveTheme
 	jsonBlog.NavigationItems = blog.NavigationItems
 	return &jsonBlog
-}
-
-func userToJson(user *structure.User) *JsonUser {
-	var jsonUser JsonUser
-	jsonUser.Id = user.Id
-	jsonUser.Name = string(user.Name)
-	jsonUser.Slug = user.Slug
-	jsonUser.Email = string(user.Email)
-	jsonUser.Image = string(user.Image)
-	jsonUser.Cover = string(user.Cover)
-	jsonUser.Bio = string(user.Bio)
-	jsonUser.Website = string(user.Website)
-	jsonUser.Location = string(user.Location)
-	return &jsonUser
 }
 
 func InitializeAdmin(router *echo.Echo) {

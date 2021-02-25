@@ -14,7 +14,6 @@ import (
 
 	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
-	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/templates"
 )
 
@@ -200,7 +199,7 @@ func InitializeBlog(router *echo.Echo) {
 	router.GET("/tag/:slug/:function/", tagHandler)
 	router.GET("/tag/:slug/:function/:number/", tagHandler)
 	// For serving asset files
-	router.Static("/assets/", filepath.Join(filenames.ThemesFilepath, methods.Blog.ActiveTheme, "assets"))
+	//router.Static("/assets/", filepath.Join(filenames.ThemesFilepath, methods.Blog.ActiveTheme, "assets"))
 	router.Static("/images/", filenames.ImagesFilepath)
 	router.Static("/content/images/", filenames.ImagesFilepath) // This is here to keep compatibility with Ghost
 	router.Static("/public/", filenames.PublicFilepath)

@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/kabukky/journey/dao/scheme"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,6 +19,7 @@ func RetrieveUsersCount() int                                                   
 func UpdateLastLogin(logInDate time.Time, userId int64) error                                    {}
 func UpdateUserPassword(id int64, password string, updated_at time.Time, updated_by int64) error {}
 */
+var ErrGetUserParamTypeNotSupport = errors.New("get user userOrIdName type is not support")
 
 func Create(db *gorm.DB, name string, password string, otherData map[string]interface{}) (user *scheme.User, err error) {
 	user = &scheme.User{}
@@ -39,11 +41,18 @@ func Create(db *gorm.DB, name string, password string, otherData map[string]inte
 	return
 }
 
-func Update(db gorm.DB, name string, updateData map[string]interface{}) (user *scheme.User, err error) {
-	err = db.Model(&scheme.User{}).Where("name = ?", name).First(&user).Error
+func Update(db *gorm.DB, userOrIdName interface{}, updateData map[string]interface{}) (user *scheme.User, err error) {
+	user, err = getUser(db, userOrIdName)
 	if err != nil {
 		return
 	}
+
+	if passwd, ok := updateData["Password"]; ok && passwd.(string) != "" {
+		if err = user.SetPassword(passwd.(string)); err != nil {
+			return
+		}
+	}
+
 	if updateData != nil {
 		delete(updateData, "UUID")
 		delete(updateData, "ID")
@@ -68,15 +77,10 @@ func Update(db gorm.DB, name string, updateData map[string]interface{}) (user *s
 	return
 }
 
-func Delete(db gorm.DB, userObjOrID interface{}) (err error) {
-	var user *scheme.User
-	if uid, ok := userObjOrID.(uint); ok {
-		err = db.Model(&scheme.User{}).First(&user, uid).Error
-		if err != nil {
-			return
-		}
-	} else {
-		user = userObjOrID.(*scheme.User)
+func Delete(db *gorm.DB, userOrIdName interface{}) (err error) {
+	user, err := getUser(db, userOrIdName)
+	if err != nil {
+		return
 	}
 
 	err = db.Delete(user).Error
@@ -100,5 +104,24 @@ func GetUserByName(db *gorm.DB, name string) (user *scheme.User, err error) {
 
 func UsersCount(db *gorm.DB) (count int64, err error) {
 	err = db.Model(scheme.User{}).Count(&count).Error
+	return
+}
+
+func getUser(db *gorm.DB, userOrIdName interface{}) (user *scheme.User, err error) {
+	if u, ok := userOrIdName.(*scheme.User); ok {
+		user = u
+		return
+	}
+
+	if id, ok := userOrIdName.(uint); ok {
+		err = db.Model(&scheme.User{}).Find(&user, id).Error
+		return
+	}
+
+	if name, ok := userOrIdName.(string); ok {
+		err = db.Model(&scheme.User{}).Where("name = ?", name).Find(&user).Error
+		return
+	}
+	err = ErrGetUserParamTypeNotSupport
 	return
 }

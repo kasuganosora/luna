@@ -3,15 +3,14 @@ package main
 import (
 	"github.com/kabukky/journey/configuration"
 	"github.com/kabukky/journey/dao"
+	"github.com/kabukky/journey/dao/scheme"
 	"github.com/kabukky/journey/database"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/flags"
 	"github.com/kabukky/journey/logger"
-	"github.com/kabukky/journey/plugins"
 	"github.com/kabukky/journey/repositories/file"
 	"github.com/kabukky/journey/repositories/setting"
 	"github.com/kabukky/journey/server"
-	"github.com/kabukky/journey/structure/methods"
 	"github.com/kabukky/journey/templates"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -22,7 +21,12 @@ func main() {
 
 	var err error
 	setting.LoadEnv()
-	dao.InitDao()
+	var dsn *scheme.Setting
+	if dsn, err = setting.GetGlobal("dsn"); err != nil {
+		panic("Get DB DSN error: " + err.Error())
+	}
+
+	dao.InitDao(dsn.GetString())
 	err = setting.LoadCache(dao.DB)
 	if err != nil {
 		logger.Fatal(err)
@@ -73,21 +77,16 @@ func initComponents() (err error) {
 		return
 	}
 
-	if err = methods.GenerateBlog(); err != nil {
-		logger.Fatal("Error: Couldn't generate blog data:", err)
-		return
-	}
-
 	if err = templates.Generate(); err != nil {
 		logger.Fatal("Error: Couldn't compile templates:", err)
 		return
 	}
 
-	if err = plugins.Load(); err == nil {
-		// Close LuaPool at the end
-		defer plugins.LuaPool.Shutdown()
-		logger.Info("Plugins loaded.")
-	}
+	//if err = plugins.Load(); err == nil {
+	//	// Close LuaPool at the end
+	//	defer plugins.LuaPool.Shutdown()
+	//	logger.Info("Plugins loaded.")
+	//}
 
 	if err = file.InitFS(); err != nil {
 		logger.Fatal("Error: Couldn't init filesystem:", err)
