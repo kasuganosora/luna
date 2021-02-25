@@ -32,6 +32,9 @@ func Create(db *gorm.DB, name string, password string, otherData map[string]inte
 		}
 	}
 
+	user.Name = name
+	user.Slug = name
+
 	if password != "" {
 		if err = user.SetPassword(password); err != nil {
 			return
@@ -88,17 +91,32 @@ func Delete(db *gorm.DB, userOrIdName interface{}) (err error) {
 }
 
 func GetUserByID(db *gorm.DB, uid uint) (user *scheme.User, err error) {
+	user = &scheme.User{}
 	err = db.Model(scheme.User{}).Preload(clause.Associations).First(&user, uid).Error
+	if err != nil {
+		user = nil
+		return
+	}
 	return
 }
 
 func GetUserBySlug(db *gorm.DB, slug string) (user *scheme.User, err error) {
+	user = &scheme.User{}
 	err = db.Model(scheme.User{}).Preload(clause.Associations).Where("slug = ?", slug).First(&user).Error
+	if err != nil {
+		user = nil
+		return
+	}
 	return
 }
 
 func GetUserByName(db *gorm.DB, name string) (user *scheme.User, err error) {
+	user = &scheme.User{}
 	err = db.Model(scheme.User{}).Preload(clause.Associations).Where("name = ?", name).First(&user).Error
+	if err != nil {
+		user = nil
+		return
+	}
 	return
 }
 
@@ -108,6 +126,7 @@ func UsersCount(db *gorm.DB) (count int64, err error) {
 }
 
 func getUser(db *gorm.DB, userOrIdName interface{}) (user *scheme.User, err error) {
+	user = &scheme.User{}
 	if u, ok := userOrIdName.(*scheme.User); ok {
 		user = u
 		return
@@ -115,13 +134,20 @@ func getUser(db *gorm.DB, userOrIdName interface{}) (user *scheme.User, err erro
 
 	if id, ok := userOrIdName.(uint); ok {
 		err = db.Model(&scheme.User{}).Find(&user, id).Error
+		if err != nil {
+			user = nil
+		}
 		return
 	}
 
 	if name, ok := userOrIdName.(string); ok {
 		err = db.Model(&scheme.User{}).Where("name = ?", name).Find(&user).Error
+		if err != nil {
+			user = nil
+		}
 		return
 	}
+	user = nil
 	err = ErrGetUserParamTypeNotSupport
 	return
 }

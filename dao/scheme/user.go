@@ -73,6 +73,10 @@ func (u *User) SetPassword(password string) (err error) {
 }
 
 func (u *User) ComparePassword(password string) (ok bool, err error) {
+	if u == nil || u.Password == "" || u.PasswordSalt == "" {
+		ok = false
+		return
+	}
 	password = strings.TrimSpace(password)
 	hash, err := scrypt.Key([]byte(password), []byte(u.PasswordSalt), 1<<15, 8, 1, PW_HASH_BYTES)
 	if err != nil {

@@ -2,7 +2,6 @@ package flags
 
 import (
 	"flag"
-	"github.com/kabukky/journey/logger"
 )
 
 var (
@@ -19,9 +18,6 @@ func init() {
 	Settings = make(map[string]interface{})
 	// Parse all flags
 	parseFlags()
-	if IsInDevMode {
-		logger.Info("Starting Journey in developer mode...")
-	}
 }
 
 func parseFlags() {

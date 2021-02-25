@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/kabukky/journey/configuration"
 	"github.com/kabukky/journey/dao"
+	"github.com/kabukky/journey/dao/migration"
 	"github.com/kabukky/journey/dao/scheme"
 	"github.com/kabukky/journey/filenames"
 	"github.com/kabukky/journey/flags"
@@ -25,15 +26,10 @@ func main() {
 	}
 
 	dao.InitDao(dsn.GetString(), setting.IsDebugMode())
-	err = setting.LoadCache(dao.DB)
-	if err != nil {
-		logger.Fatal(err)
-		return
-	}
 
 	e := echo.New()
 	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	//e.Use(middleware.Recover())
 
 	e.HideBanner = true
 	logger.DefaultLogger = e.Logger
@@ -70,17 +66,26 @@ func main() {
 }
 
 func initComponents() (err error) {
+	if dao.DB.Migrator().HasTable((scheme.Post{}).TableName()) == false {
+		err = migration.Do(dao.DB)
+		if err != nil {
+			panic(err)
+		}
+	}
 
-	//if err = plugins.Load(); err == nil {
-	//	// Close LuaPool at the end
-	//	defer plugins.LuaPool.Shutdown()
-	//	logger.Info("Plugins loaded.")
-	//}
+	if err = setting.LoadCache(dao.DB); err != nil {
+		panic(err)
+	}
 
 	if err = file.InitFS(); err != nil {
 		logger.Fatal("Error: Couldn't init filesystem:", err)
 		return
 	}
+
+	if flags.IsInDevMode {
+		logger.Info("Starting Journey in developer mode...")
+	}
+
 	return
 }
 

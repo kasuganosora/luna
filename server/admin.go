@@ -146,6 +146,7 @@ func postRegistrationHandler(c echo.Context) (err error) {
 
 		otherData := make(map[string]interface{})
 		otherData["Email"] = email
+
 		_, err = user.Create(db, name, password, otherData)
 		if err != nil {
 			logger.Error("Create User Error %v", err)

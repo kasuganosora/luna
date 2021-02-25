@@ -12,6 +12,7 @@ func LoginIsCorrect(name string, password string) bool {
 	userObj, err := user.GetUserByName(dao.DB, name)
 	if err != nil && !errors.Is(gorm.ErrRecordNotFound, err) {
 		logger.Error("LoginIsCorrect has error: %v", err)
+		return false
 	}
 
 	ok, err := userObj.ComparePassword(password)

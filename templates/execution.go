@@ -40,7 +40,7 @@ func GetTemplateFilePath(template string) (templateFilePath string, err error) {
 	if err != nil {
 		return
 	}
-	templateFilePath = filepath.Join(filenames.ThemesFilepath, theme.GetString(), template)
+	templateFilePath = filepath.Join(filenames.ThemesFilepath, theme.GetString(), template) + ".html"
 	if _, err = os.Stat(templateFilePath); err != nil {
 		templateFilePath = ""
 		return

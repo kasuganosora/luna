@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kabukky/journey/dao"
 	"github.com/kabukky/journey/repositories/post"
+	"github.com/kabukky/journey/repositories/setting"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
@@ -202,7 +203,10 @@ func InitializeBlog(router *echo.Echo) {
 	router.GET("/tag/:slug/:function/", tagHandler)
 	router.GET("/tag/:slug/:function/:number/", tagHandler)
 	// For serving asset files
-	//router.Static("/assets/", filepath.Join(filenames.ThemesFilepath, methods.Blog.ActiveTheme, "assets"))
+	themeSetting, err := setting.RetrieveActiveTheme(dao.DB)
+	if err == nil {
+		router.Static("/assets/", filepath.Join(filenames.ThemesFilepath, themeSetting.GetString(), "assets"))
+	}
 	router.Static("/images/", filenames.ImagesFilepath)
 	router.Static("/content/images/", filenames.ImagesFilepath) // This is here to keep compatibility with Ghost
 	router.Static("/public/", filenames.PublicFilepath)
