@@ -18,7 +18,7 @@
 		<div class="col-sm-6" id="markdown-div">
 			<div class="row">
 				<div class="col-sm-12" id="markdown-title-div">
-					<input autofocus="autofocus" spellcheck="true" class="form-control" id="markdown-title-input" type="text" ng-model="shared.post.Title" value="{{shared.post.Title}}"></input>
+					<input autofocus="autofocus" spellcheck="true" class="form-control" id="markdown-title-input" type="text" ng-model="shared.post.title" value="{{shared.post.title}}"></input>
 				</div>
 			</div>
 			<div class="row">
@@ -29,7 +29,7 @@
 			 		<a ng-controller="EmptyModalCtrl" ng-click="open('lg', 'post-help')">
 			 			<span class="glyphicon glyphicon-question-sign markdown-modal-button" aria-hidden="true"></span>
 					</a>
-					<textarea class="textarea-autosize" id="markdown-textarea" rows="15" ng-model="shared.post.Markdown" ng-change="change()">{shared.post.Markdown}</textarea>
+					<textarea class="textarea-autosize" id="markdown-textarea" rows="15" ng-model="shared.post.markdown" ng-change="change()">{shared.post.markdown}</textarea>
 				</div>
 			</div>
 		</div>
@@ -50,7 +50,7 @@
 			<form class="navbar-form navbar-left" role="form">
 				<div class="navbar-label-text">标签:&nbsp;
 					<div class="form-group">
-						<input type="text" class="form-control" id="tags-input" ng-model="shared.post.Tags" value="{{shared.post.Tags}}">
+						<input type="text" class="form-control" id="tags-input" ng-model="shared.post.tags_str" value="{{shared.post.tags_str}}">
 					</div>
 				</div>
 			</form>

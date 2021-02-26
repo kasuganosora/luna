@@ -223,7 +223,9 @@ func apiPostsHandler(c echo.Context) (err error) {
 	ctx := context.Background()
 	db := dao.DB.WithContext(ctx)
 
-	posts, _, err := post.GetPostBySearch(db, nil, ((page - 1) * postsPerPage), postsPerPage, "")
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, _, err := post.GetPostBySearch(db, nil, ((page - 1) * postsPerPage), postsPerPage, "created_at desc", searchOpts)
 
 	if err != nil {
 		return
@@ -277,31 +279,28 @@ func postApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
-	data := &scheme.Post{}
+	savePostData := make(map[string]interface{})
 	decoder := json.NewDecoder(c.Request().Body)
-	err = decoder.Decode(&data)
+	err = decoder.Decode(&savePostData)
 	if err != nil {
 		return
 	}
 
-	savePostData := make(map[string]interface{})
-	savePostData["Title"] = data.Title
-	savePostData["Slug"] = data.Slug
-	savePostData["Markdown"] = data.Markdown
-	savePostData["HTML"] = conversion.GenerateHtmlFromMarkdown([]byte(data.Markdown))
-	savePostData["Featured"] = data.Featured
-	savePostData["Page"] = data.Page
-	savePostData["PublishedAt"] = data.PublishedAt
-	if data.PublishedAt != nil {
+	savePostData["HTML"] = string(conversion.GenerateHtmlFromMarkdown([]byte(savePostData["Markdown"].(string))))
+
+	if savePostData["Status"] == scheme.POST_STATUS_PUBLISHED {
 		savePostData["PublishedBy"] = userObj.ID
 	}
 
-	savePostData["MetaDescription"] = data.MetaDescription
-	savePostData["MetaTitle"] = data.MetaTitle
-	savePostData["Image"] = data.Image
-	savePostData["tags_str"] = data.TagsStr
-	savePostData["AuthorID"] = userObj.ID
+	if savePostData["tags_str"].(string) != "" {
+		savePostData["tags_str"] = strings.Split(savePostData["tags_str"].(string), ";")
+	}
 
+	if _, ok := savePostData["AuthorID"]; !ok {
+		savePostData["AuthorID"] = userObj.ID
+	}
+
+	savePostData["CreatedBy"] = userObj.ID
 	_, err = post.Create(db, savePostData)
 	if err != nil {
 		return
@@ -328,36 +327,39 @@ func patchApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
-	data := &scheme.Post{}
-	decoder := json.NewDecoder(c.Request().Body)
-	err = decoder.Decode(&data)
-	if err != nil {
-		return
-	}
-
-	postObj, err := post.GetPostByID(db, data.ID)
-	if err != nil {
-		return
-	}
-
 	savePostData := make(map[string]interface{})
-	savePostData["Title"] = data.Title
-	savePostData["Slug"] = data.Slug
-	savePostData["Markdown"] = data.Markdown
-	savePostData["HTML"] = conversion.GenerateHtmlFromMarkdown([]byte(data.Markdown))
-	savePostData["Featured"] = data.Featured
-	savePostData["Page"] = data.Page
-	savePostData["PublishedAt"] = data.PublishedAt
-	if data.PublishedAt != nil {
+	decoder := json.NewDecoder(c.Request().Body)
+	err = decoder.Decode(&savePostData)
+	if err != nil {
+		return
+	}
+
+	var postID uint
+	if id, ok := savePostData["id"]; ok {
+		postID = uint(id.(float64))
+	} else {
+		err = c.String(http.StatusBadRequest, "missing id param.")
+		return
+	}
+
+	postObj, err := post.GetPostByID(db, postID)
+	if err != nil {
+		return
+	}
+
+	delete(savePostData, "tags")
+
+	savePostData["Markdown"] = string(conversion.GenerateHtmlFromMarkdown([]byte(savePostData["markdown"].(string))))
+
+	if savePostData["Status"] == scheme.POST_STATUS_PUBLISHED && postObj.PublishedBy == nil {
 		savePostData["PublishedBy"] = userObj.ID
 	}
 
-	savePostData["MetaDescription"] = data.MetaDescription
-	savePostData["MetaTitle"] = data.MetaTitle
-	savePostData["Image"] = data.Image
-	savePostData["tags_str"] = data.TagsStr
+	if savePostData["tags_str"].(string) != "" {
+		savePostData["tags_str"] = strings.Split(savePostData["tags_str"].(string), ";")
+	}
+
 	savePostData["UpdatedBy"] = userObj.ID
-	savePostData["UpdatedAt"] = time.Now()
 
 	_, err = post.Update(db, postObj, savePostData)
 	if err != nil {
@@ -373,7 +375,7 @@ func patchApiPostHandler(c echo.Context) (err error) {
 func deleteApiPostHandler(c echo.Context) (err error) {
 	userName := authentication.GetUserName(c)
 	if userName == "" {
-		http.Error(c.Response(), "Not logged in!", http.StatusUnauthorized)
+		err = c.String(http.StatusUnauthorized, "Not logged in!")
 		return
 	}
 
@@ -389,7 +391,6 @@ func deleteApiPostHandler(c echo.Context) (err error) {
 	}
 	err = post.Delete(db, uint(postId))
 	if err != nil {
-
 		return
 	}
 	err = c.String(http.StatusOK, "Post deleted!")

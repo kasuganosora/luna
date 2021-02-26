@@ -179,15 +179,20 @@ adminApp.controller('CreateCtrl', function ($scope, $http, $sce, $location, shar
   //change the navbar according to controller
   $scope.navbarHtml = $sce.trustAsHtml('<ul class="nav navbar-nav"><li><a href="#/">文章</a></li><li class="active"><a href="#/create/">新建文章<span class="sr-only">(当前)</span></a></li><li><a href="#/settings/">设置</a></li><li><a href="logout/" class="logout">( 退出 )</a></li></ul>');
   $scope.shared = sharingService.shared;
-  $scope.shared.post = {Title: '文章标题', Slug: '', Markdown: '文章内容（ Markdown 格式）', IsPublished: false, Image: '', Tags: ''}
+  $scope.shared.post = {title: '文章标题', Slug: '', markdown: '文章内容（ Markdown 格式）', IsPublished: false, Image: '', tags_str: ''}
   $scope.change = function() {
-    document.getElementById('html-div').innerHTML = '<h1>' + $scope.shared.post.Title + '</h1><br>' + converter.makeHtml($scope.shared.post.Markdown);
+    document.getElementById('html-div').innerHTML = '<h1>' + $scope.shared.post.title + '</h1><br>' + converter.makeHtml($scope.shared.post.markdown);
     //resize the markdown textarea
-    $('.textarea-autosize').val($scope.shared.post.Markdown).trigger('input');
+    $('.textarea-autosize').val($scope.shared.post.markdown).trigger('input');
   };
   $scope.change();
   $scope.save = function() {
     $('#post-save-button').attr('disabled', 'true');
+    if($scope.shared.post.IsPublished){
+      $scope.shared.post.status = "published"
+    }else{
+      $scope.shared.post.status = "draft"
+    }
     $http.post('/admin/api/post', $scope.shared.post).success(function(data) {
       $location.url('/');
     });
@@ -202,16 +207,32 @@ adminApp.controller('EditCtrl', function ($scope, $routeParams, $http, $sce, $lo
   $scope.shared = sharingService.shared;
   $scope.shared.post = {}
   $scope.change = function() {
-    document.getElementById('html-div').innerHTML = '<h1>' + $scope.shared.post.Title + '</h1><br>' + converter.makeHtml($scope.shared.post.Markdown);
+    document.getElementById('html-div').innerHTML = '<h1>' + $scope.shared.post.title + '</h1><br>' + converter.makeHtml($scope.shared.post.markdown);
     //resize the markdown textarea
-    $('.textarea-autosize').val($scope.shared.post.Markdown).trigger('input');
+    $('.textarea-autosize').val($scope.shared.post.markdown).trigger('input');
   };
   $http.get('/admin/api/post/' + $routeParams.Id).success(function(data) {
     $scope.shared.post = data;
+    var tags = [];
+    for(let i = 0, l= data.tags.length; i < l; i++){
+      tags.push(data.tags[i].name)
+    }
+    $scope.shared.post.tags_str = tags.join(";");
+    if($scope.shared.post.status == "published"){
+      $scope.shared.post.IsPublished = true
+    }else{
+      $scope.shared.post.IsPublished = false
+    }
     $scope.change();
   });
   $scope.save = function() {
     $('#post-save-button').attr('disabled', 'true');
+    if($scope.shared.post.IsPublished){
+      $scope.shared.post.status = "published"
+    }else{
+      $scope.shared.post.status = "draft"
+    }
+
     $http.patch('/admin/api/post', $scope.shared.post).success(function(data) {
       $('#post-save-button').removeAttr('disabled');
     });
@@ -262,7 +283,7 @@ adminApp.controller('ImageModalCtrl', function ($scope, $modal, $http, sharingSe
     modalInstance.result.then(function (selectedItem) {
       if (callingFrom == 'post-image') {
         $scope.selected = selectedItem;
-        $scope.shared.post.Markdown = $scope.shared.post.Markdown + '\n\n![](' + $scope.selected + ')\n\n';
+        $scope.shared.post.markdown = $scope.shared.post.markdown + '\n\n![](' + $scope.selected + ')\n\n';
         $scope.change(); //we invoke the change function of CreateCtrl or EditCtrl to update the html view.
       } else if (callingFrom == 'post-cover') {
         $scope.selected = selectedItem;

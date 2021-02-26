@@ -25,12 +25,12 @@
 				<td class="post-number-cell" ng-click="openPost(post.Id)">
 					<h4>{{$index + 1}}</h4>
 				</td>
-				<td class="post-cell" ng-click="openPost(post.Id)">
-				<h4>{{post.Title}} <small class="text-success" ng-if="post.IsPublished">Published</small><small class="text-warning" ng-if="!post.IsPublished">草稿</small></h4>
-				<p>{{post.Markdown | limitTo: 400}}{{post.Markdown.length > 400 ? '...' : ''}}</p>
+				<td class="post-cell" ng-click="openPost(post.id)">
+				<h4>{{post.title}} <small class="text-success" ng-if="post.status == 'published'">Published</small><small class="text-warning" ng-if="post.status != 'published'">草稿</small></h4>
+				<p>{{post.markdown | limitTo: 400}}{{post.markdown.length > 400 ? '...' : ''}}</p>
 				</td>
 				<td class="post-remove-cell">
-					<a class="text-danger" id="post-cover-delete" ng-click="deletePost(post.Id, post.Title)"><h5><span class="glyphicon glyphicon-remove" aria-hidden="true"></span> 删除</h5></a>
+					<a class="text-danger" id="post-cover-delete" ng-click="deletePost(post.id, post.title)"><h5><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>删除</h5></a>
 				</td>
 			</tr>
 		</tbody>

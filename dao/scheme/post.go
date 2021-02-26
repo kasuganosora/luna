@@ -26,7 +26,7 @@ type Post struct {
 	MetaTitle       *string        `gorm:"type:varchar(150);" json:"meta_title"`
 	MetaDescription *string        `gorm:"type:text" json:"meta_description"`
 	AuthorID        *uint          `json:"author_id"`
-	Author          *User          `gorm:"foreignKey:AuthorID"`
+	Author          *User          `gorm:"foreignKey:AuthorID" json:"author"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime" json:"created_at"`
 	CreatedBy       *uint          `json:"created_by"`
 	CreatedUser     *User          `gorm:"foreignKey:CreatedBy"`
@@ -38,7 +38,7 @@ type Post struct {
 	PublishedUser   *User          `gorm:"foreignKey:PublishedBy"`
 	ScheduleTime    *time.Time     `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-	Tags            Tags           `gorm:"many2many:posts_tags"`
+	Tags            Tags           `gorm:"many2many:posts_tags" json:"tags"`
 	TagsStr         *[]string      `gorm:"-" json:"tags_str,omitempty"`
 }
 

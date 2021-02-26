@@ -17,21 +17,6 @@ var ErrPostNotExists = errors.New("post not exists")
 
 var totalPostCount int64 = -1
 
-/*
-func InsertPost(title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, created_at time.Time, created_by int64) (int64, error) {
-}
-func InsertPostTag(post_id int64, tag_id int64) error                                        {}
-func DeletePostTagsForPostId(post_id int64) error                                            {}
-func DeletePostById(id int64) error                                                          {}
-func RetrievePostById(id int64) (*structure.Post, error)                                     {}
-func RetrievePostBySlug(slug string) (*structure.Post, error)                                {}
-func RetrievePostsByUser(user_id int64, limit int64, offset int64) ([]structure.Post, error) {}
-func RetrievePostsByTag(tag_id int64, limit int64, offset int64) ([]structure.Post, error)   {}
-func RetrievePostsForIndex(limit int64, offset int64) ([]structure.Post, error)              {}
-func RetrievePostsForApi(limit int64, offset int64) ([]structure.Post, error)                {}
-func Update(id int64, title []byte, slug string, markdown []byte, html []byte, featured bool, isPage bool, published bool, meta_description []byte, image []byte, updated_at time.Time, updated_by int64) error {
-}
-*/
 func Create(db *gorm.DB, data map[string]interface{}) (post *scheme.Post, err error) {
 	post = &scheme.Post{}
 	if err = post.FillFromMap(data); err != nil {
@@ -63,17 +48,8 @@ func Update(db *gorm.DB, postOrPostID interface{}, data map[string]interface{}) 
 		db = dao.DB.Session(&gorm.Session{})
 	}
 
-	if v, ok := postOrPostID.(*scheme.Post); ok {
-		post = v
-	} else if v, ok := postOrPostID.(int64); ok {
-		post = &scheme.Post{}
-		if err = db.First(post, v).Error; err != nil {
-			post = nil
-			return
-		}
-	}
-
-	if post == nil {
+	post, err = getPostByIDOrSlug(db, postOrPostID)
+	if err != nil {
 		return
 	}
 
@@ -101,16 +77,8 @@ func Delete(db *gorm.DB, postOrPostID interface{}) (err error) {
 		db = dao.DB.Session(&gorm.Session{})
 	}
 
-	if v, ok := postOrPostID.(*scheme.Post); ok {
-		post = v
-	} else if v, ok := postOrPostID.(int64); ok {
-		if err = db.First(post, v).Error; err != nil {
-			return
-		}
-	}
-
-	if post == nil {
-		err = ErrPostNotExists
+	post, err = getPostByIDOrSlug(db, postOrPostID)
+	if err != nil {
 		return
 	}
 
@@ -203,20 +171,32 @@ func SetPostTags(db *gorm.DB, post *scheme.Post, tags interface{}, setTagUserID 
 }
 
 func GetPostByID(db *gorm.DB, postID uint) (post *scheme.Post, err error) {
-	err = db.Preload(clause.Associations).First(post, postID).Error
+	tmp := scheme.Post{}
+	err = db.Preload(clause.Associations).First(&tmp, postID).Error
+	if err == nil {
+		post = &tmp
+	}
 	return
 }
 
 func GetPostBySlug(db *gorm.DB, slug string) (post *scheme.Post, err error) {
-	err = db.Preload(clause.Associations).Where("slug = ?", slug).First(post).Error
+	tmp := scheme.Post{}
+	err = db.Preload(clause.Associations).Where("slug = ?", slug).First(&tmp).Error
+	if err == nil {
+		post = &tmp
+	}
 	return
 }
 
-func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int64, orderBy interface{}) (posts scheme.Posts, total int64, err error) {
+func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limit int64, orderBy interface{}, otherOpts map[string]interface{}) (posts scheme.Posts, total int64, err error) {
 	query := db.Model(scheme.Post{})
 
 	if conditions == nil {
 		conditions = make(map[string]interface{})
+	}
+
+	if otherOpts == nil {
+		otherOpts = make(map[string]interface{})
 	}
 
 	for key, val := range conditions {
@@ -280,6 +260,9 @@ func GetPostBySearch(db *gorm.DB, conditions map[string]interface{}, start, limi
 		query = query.Offset(int(start))
 	}
 
+	if b, ok := otherOpts["preload"]; ok && b.(bool) == true {
+		query = query.Preload(clause.Associations)
+	}
 	err = query.Find(&posts).Error
 
 	return
@@ -300,5 +283,36 @@ func GetTotalPostCount(db *gorm.DB) (count int64, err error) {
 	}
 
 	count = totalPostCount
+	return
+}
+
+func getPostByIDOrSlug(db *gorm.DB, idOrSlug interface{}) (post *scheme.Post, err error) {
+	var ok bool
+	tmp := scheme.Post{}
+	if post, ok = idOrSlug.(*scheme.Post); ok {
+		return
+	}
+	if id, ok := idOrSlug.(uint); ok {
+
+		err = db.First(&tmp, id).Error
+		if err != nil {
+			post = nil
+			return
+		}
+		post = &tmp
+		return
+	}
+
+	if slug, ok := idOrSlug.(string); ok {
+		err = db.Model(&scheme.Post{}).Where("slug = ?", slug).First(&tmp).Error
+		if err != nil {
+			post = nil
+			return
+		}
+		post = &tmp
+		return
+	}
+	post = nil
+	err = ErrPostNotExists
 	return
 }

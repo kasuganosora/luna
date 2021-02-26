@@ -101,7 +101,7 @@ abc
 	// test search
 	// search all
 	searchOpts := make(map[string]interface{})
-	posts, total, err := post.GetPostBySearch(db, searchOpts, 0, 0, "id asc")
+	posts, total, err := post.GetPostBySearch(db, searchOpts, 0, 0, "id asc", nil)
 	assert.Nil(t, err)
 	assert.True(t, total > 0)
 	assert.NotNil(t, posts)
@@ -111,7 +111,7 @@ abc
 	searchOpts = make(map[string]interface{})
 	searchOpts["tags"] = "tag4"
 	db = db.Debug()
-	posts, total, err = post.GetPostBySearch(db, searchOpts, 0, 0, "id asc")
+	posts, total, err = post.GetPostBySearch(db, searchOpts, 0, 0, "id asc", nil)
 	assert.Nil(t, err)
 	assert.True(t, total == 1)
 	assert.NotNil(t, posts)

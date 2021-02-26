@@ -55,7 +55,9 @@ func ShowAuthorTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err
 
 	conds := make(map[string]interface{})
 	conds["user"] = author
-	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil)
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil, searchOpts)
 
 	if err != nil {
 		return
@@ -93,7 +95,9 @@ func ShowTagTemplate(c echo.Context, db *gorm.DB, slug string, page int) (err er
 
 	conds := make(map[string]interface{})
 	conds["tags"] = tagObj.Name
-	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil)
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil, searchOpts)
 
 	if err != nil {
 		return
@@ -130,8 +134,9 @@ func ShowIndexTemplate(c echo.Context, db *gorm.DB, page int) (err error) {
 	if keyword := c.QueryParam("keyword"); keyword != "" {
 		conds["keyword"] = keyword
 	}
-
-	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil)
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, total, err := post.GetPostBySearch(db, conds, start, limit, nil, searchOpts)
 	if err != nil {
 		return
 	}

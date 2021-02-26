@@ -24,7 +24,10 @@ func ShowIndexRss(c echo.Context, db *gorm.DB) (err error) {
 		return
 	}
 
-	posts, _, err := post.GetPostBySearch(db, nil, 0, 15, "")
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+
+	posts, _, err := post.GetPostBySearch(db, nil, 0, 15, "created_at desc", searchOpts)
 	if err != nil {
 		return err
 	}
@@ -49,7 +52,9 @@ func ShowTagRss(c echo.Context, db *gorm.DB, slug string) (err error) {
 	// 15 posts in rss for now
 	conds := make(map[string]interface{})
 	conds["tags"] = tagObj.Name
-	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "")
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "created_at desc", searchOpts)
 	if err != nil {
 		return
 	}
@@ -73,7 +78,9 @@ func ShowAuthorRss(c echo.Context, db *gorm.DB, slug string) (err error) {
 	// 15 posts in rss for now
 	conds := make(map[string]interface{})
 	conds["user"] = author.ID
-	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "")
+	searchOpts := make(map[string]interface{})
+	searchOpts["preload"] = true
+	posts, _, err := post.GetPostBySearch(db, conds, 0, 15, "created_at desc", searchOpts)
 	if err != nil {
 		return
 	}
@@ -115,7 +122,7 @@ func createFeed(values *structure.RequestData) *feeds.Feed {
 			Description: postObj.HTML,
 			Link:        &feeds.Link{Href: buffer.String()},
 			Id:          postObj.UUID.String(),
-			Author:      &feeds.Author{Name: string(postObj.Author.Name), Email: ""},
+			Author:      &feeds.Author{Name: postObj.Author.Name, Email: ""},
 			Created:     postObj.CreatedAt,
 		}
 

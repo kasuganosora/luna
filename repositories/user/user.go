@@ -126,25 +126,27 @@ func UsersCount(db *gorm.DB) (count int64, err error) {
 }
 
 func getUser(db *gorm.DB, userOrIdName interface{}) (user *scheme.User, err error) {
-	user = &scheme.User{}
+	tmp := scheme.User{}
 	if u, ok := userOrIdName.(*scheme.User); ok {
 		user = u
 		return
 	}
 
 	if id, ok := userOrIdName.(uint); ok {
-		err = db.Model(&scheme.User{}).Find(&user, id).Error
+		err = db.Model(&scheme.User{}).First(&tmp, id).Error
 		if err != nil {
 			user = nil
 		}
+		user = &tmp
 		return
 	}
 
 	if name, ok := userOrIdName.(string); ok {
-		err = db.Model(&scheme.User{}).Where("name = ?", name).Find(&user).Error
+		err = db.Model(&scheme.User{}).Where("name = ?", name).First(&tmp).Error
 		if err != nil {
 			user = nil
 		}
+		user = &tmp
 		return
 	}
 	user = nil

@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"time"
 )
 
 var cookieHandler = securecookie.New(
@@ -16,9 +17,10 @@ func SetSession(c echo.Context, userName string) {
 	}
 	if encoded, err := cookieHandler.Encode("session", value); err == nil {
 		cookie := &http.Cookie{
-			Name:  "session",
-			Value: encoded,
-			Path:  "/admin/",
+			Name:    "session",
+			Value:   encoded,
+			Path:    "/admin/",
+			Expires: time.Now().Add(time.Hour * 24),
 		}
 		c.SetCookie(cookie)
 	}
@@ -31,6 +33,7 @@ func GetUserName(c echo.Context) (userName string) {
 			userName = cookieValue["name"]
 		}
 	}
+
 	return userName
 }
 
