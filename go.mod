@@ -3,6 +3,7 @@ module github.com/kabukky/journey
 go 1.16
 
 require (
+	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/elliotchance/pie v1.38.1
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -23,6 +24,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/stretchr/testify v1.7.0
+	github.com/uniplaces/carbon v0.1.6 // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d // indirect

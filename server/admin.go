@@ -279,25 +279,20 @@ func postApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
-	savePostData := make(map[string]interface{})
+	postData := make(map[string]interface{})
 	decoder := json.NewDecoder(c.Request().Body)
-	err = decoder.Decode(&savePostData)
+	err = decoder.Decode(&postData)
 	if err != nil {
 		return
 	}
 
-	savePostData["HTML"] = string(conversion.GenerateHtmlFromMarkdown([]byte(savePostData["Markdown"].(string))))
+	savePostData, err := post.PostDataConv(db, postData)
+	if err != nil {
+		return
+	}
 
 	if savePostData["Status"] == scheme.POST_STATUS_PUBLISHED {
 		savePostData["PublishedBy"] = userObj.ID
-	}
-
-	if savePostData["tags_str"].(string) != "" {
-		savePostData["tags_str"] = strings.Split(savePostData["tags_str"].(string), ";")
-	}
-
-	if _, ok := savePostData["AuthorID"]; !ok {
-		savePostData["AuthorID"] = userObj.ID
 	}
 
 	savePostData["CreatedBy"] = userObj.ID
@@ -327,15 +322,15 @@ func patchApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
-	savePostData := make(map[string]interface{})
+	postData := make(map[string]interface{})
 	decoder := json.NewDecoder(c.Request().Body)
-	err = decoder.Decode(&savePostData)
+	err = decoder.Decode(&postData)
 	if err != nil {
 		return
 	}
 
 	var postID uint
-	if id, ok := savePostData["id"]; ok {
+	if id, ok := postData["id"]; ok {
 		postID = uint(id.(float64))
 	} else {
 		err = c.String(http.StatusBadRequest, "missing id param.")
@@ -347,16 +342,13 @@ func patchApiPostHandler(c echo.Context) (err error) {
 		return
 	}
 
-	delete(savePostData, "tags")
-
-	savePostData["Markdown"] = string(conversion.GenerateHtmlFromMarkdown([]byte(savePostData["markdown"].(string))))
+	savePostData, err := post.PostDataConv(db, postData)
+	if err != nil {
+		return
+	}
 
 	if savePostData["Status"] == scheme.POST_STATUS_PUBLISHED && postObj.PublishedBy == nil {
 		savePostData["PublishedBy"] = userObj.ID
-	}
-
-	if savePostData["tags_str"].(string) != "" {
-		savePostData["tags_str"] = strings.Split(savePostData["tags_str"].(string), ";")
 	}
 
 	savePostData["UpdatedBy"] = userObj.ID

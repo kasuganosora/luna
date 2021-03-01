@@ -39,7 +39,7 @@ type Post struct {
 	ScheduleTime    *time.Time     `json:"schedule_time"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 	Tags            Tags           `gorm:"many2many:posts_tags" json:"tags"`
-	TagsStr         *[]string      `gorm:"-" json:"tags_str,omitempty"`
+	TagsStr         string         `gorm:"-" json:"tags_str,omitempty"`
 }
 
 func (Post) TableName() string {

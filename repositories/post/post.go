@@ -6,6 +6,7 @@ import (
 	"github.com/kabukky/journey/dao"
 	"github.com/kabukky/journey/dao/scheme"
 	"github.com/pkg/errors"
+	"github.com/uniplaces/carbon"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"strings"
@@ -314,5 +315,123 @@ func getPostByIDOrSlug(db *gorm.DB, idOrSlug interface{}) (post *scheme.Post, er
 	}
 	post = nil
 	err = ErrPostNotExists
+	return
+}
+
+func PostDataConv(db *gorm.DB, postData map[string]interface{}) (savePostData map[string]interface{}, err error) {
+	if postData == nil {
+		return
+	}
+	savePostData = make(map[string]interface{})
+	if title, ok := postData["title"]; ok {
+		savePostData["Title"] = title
+	}
+
+	if slug, ok := postData["slug"]; ok {
+		savePostData["Slug"] = slug
+	}
+
+	if markdown, ok := postData["markdown"]; ok {
+		savePostData["Markdown"] = markdown
+		postData["HTML"] = string(conversion.GenerateHtmlFromMarkdown([]byte(markdown.(string))))
+	}
+
+	if image, ok := postData["image"]; ok {
+		savePostData["Image"] = image
+	}
+
+	if featured, ok := postData["featured"]; ok {
+		savePostData["Featured"] = featured
+	}
+
+	if page, ok := postData["page"]; ok {
+		savePostData["Page"] = page
+	}
+
+	if status, ok := postData["status"]; ok {
+		savePostData["Status"] = status
+	}
+
+	if language, ok := postData["language"]; ok {
+		savePostData["Language"] = language
+	}
+
+	if metaTitle, ok := postData["meta_title"]; ok {
+		savePostData["MetaTitle"] = metaTitle
+	}
+
+	if metaDescription, ok := postData["meta_description"]; ok {
+		savePostData["MetaDescription"] = metaDescription
+	}
+
+	if authorID, ok := postData["author_id"]; ok {
+		savePostData["AuthorID"] = authorID
+	}
+
+	if author, ok := postData["author"]; ok {
+		var authorStr string
+		if authorStr, ok = author.(string); ok {
+			authorObj := scheme.User{}
+			err = db.Model(&scheme.User{}).Where("name = ?", authorStr).First(&authorObj).Error
+			if err != nil {
+				return
+			}
+			savePostData["AuthorID"] = authorObj.ID
+		}
+	}
+
+	if authorID, ok := postData["author_id"]; ok {
+		savePostData["AuthorID"] = authorID
+	}
+
+	if publishedAt, ok := postData["published_at"]; ok {
+		if publishedAt == nil || publishedAt == "" {
+			savePostData["PublishedAt"] = nil
+		} else {
+			var publishedAtTime *carbon.Carbon
+			publishedAtTime, err = carbon.Parse(carbon.DefaultFormat, publishedAt.(string), carbon.Now().GetLocale())
+			if err != nil {
+				return
+			}
+			savePostData["PublishedAt"] = publishedAtTime.Time
+		}
+	}
+
+	if scheduleTimeStr, ok := postData["schedule_time"]; ok {
+		if scheduleTimeStr == nil || scheduleTimeStr == "" {
+			savePostData["ScheduleTime"] = nil
+		} else {
+			var scheduleTime *carbon.Carbon
+			scheduleTime, err = carbon.Parse(carbon.DefaultFormat, scheduleTimeStr.(string), carbon.Now().GetLocale())
+			if err != nil {
+				return
+			}
+			savePostData["ScheduleTime"] = scheduleTime.Time
+		}
+	}
+
+	if tagsStr, ok := postData["tags_str"]; ok && tagsStr.(string) != "" {
+		savePostData["tags_str"] = strings.Split(tagsStr.(string), ";")
+	}
+
+	if publishedUser, ok := postData["published_user"]; ok {
+		var publishedUserStr string
+		if publishedUserStr, ok = publishedUser.(string); ok {
+			publishedUserObj := scheme.User{}
+			err = db.Model(&scheme.User{}).Where("name = ?", publishedUserStr).First(&publishedUserObj).Error
+			if err != nil {
+				return
+			}
+			savePostData["PublishedBy"] = publishedUserObj.ID
+		}
+	}
+
+	if publishedUserID, ok := postData["published_by"]; ok {
+		savePostData["PublishedBy"] = publishedUserID
+	}
+
+	if tagsStr, ok := postData["tags_str"]; ok {
+		savePostData["TagsStr"] = tagsStr
+	}
 	return
 }
