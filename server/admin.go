@@ -80,6 +80,10 @@ type JsonImage struct {
 	Filename string
 }
 
+type JsonError struct {
+	Error string `json:"error"`
+}
+
 // Function to serve the login page
 func getLoginHandler(c echo.Context) (err error) {
 	ctx := context.Background()
@@ -99,16 +103,26 @@ func getLoginHandler(c echo.Context) (err error) {
 
 // Function to receive a login form
 func postLoginHandler(c echo.Context) (err error) {
-	name := c.FormValue("name")
-	password := c.FormValue("password")
-	if name != "" && password != "" {
-		if authentication.LoginIsCorrect(name, password) {
-			logInUser(c, name)
-		} else {
-			logger.Info("Failed login attempt for user " + name)
-		}
+	name := strings.TrimSpace(c.FormValue("name"))
+	password := strings.TrimSpace(c.FormValue("password"))
+	if name == "" || password == "" {
+		err = c.JSON(http.StatusBadRequest, &JsonError{Error: "name or password is empty"})
+		return
 	}
-	err = c.Redirect(http.StatusFound, "/admin/")
+
+	if !authentication.LoginIsCorrect(name, password) {
+		err = c.JSON(http.StatusUnauthorized, &JsonError{Error: "name or password isn't correct"})
+		return
+	}
+	ctx := context.Background()
+	db := dao.DB.WithContext(ctx)
+	currentUser, err := user.GetUserByName(db, name)
+	if err != nil {
+		err = c.JSON(http.StatusUnauthorized, &JsonError{Error: "name or password isn't correct"})
+		return
+	}
+	logInUser(c, currentUser.Name)
+	err = c.JSON(http.StatusOK, currentUser)
 	return
 }
 
@@ -388,7 +402,6 @@ func deleteApiPostHandler(c echo.Context) (err error) {
 	err = c.String(http.StatusOK, "Post deleted!")
 
 	return
-
 }
 
 // API function to upload images
@@ -631,18 +644,20 @@ func getApiUserHandler(c echo.Context) (err error) {
 		return
 	}
 
-	id := c.Param("id")
-	userIdToGet, err := strconv.ParseInt(id, 10, 64)
-	if err != nil || userIdToGet < 1 {
+	name := c.Param("name")
+
+	if name == "me" {
+		err = c.JSON(http.StatusOK, userObj)
 		return
-	} else if uint(userIdToGet) != userObj.ID { // Make sure the authenticated user is only accessing his/her own data. TODO: Make sure the user is admin when multiple users have been introduced
-		err = c.String(http.StatusForbidden, "You don't have permission to access this data.")
+	}
+
+	userObj, err = user.GetUserByName(db, userName)
+	if err != nil {
 		return
 	}
 
 	err = c.JSON(http.StatusOK, userObj)
 	return
-
 }
 
 // API function to patch user settings
@@ -818,10 +833,11 @@ func InitializeAdmin(router *echo.Echo) {
 	router.GET("/admin/api/blog", getApiBlogHandler)
 	router.PATCH("/admin/api/blog", patchApiBlogHandler)
 	// User
-	router.GET("/admin/api/user/:id", getApiUserHandler)
+	router.GET("/admin/api/user/:name", getApiUserHandler)
 	router.PATCH("/admin/api/user", patchApiUserHandler)
 	// User id
 	router.GET("/admin/api/userid", getApiUserIdHandler)
 
-	router.Static("/admin/", filenames.AdminFilepath)
+	//router.Static("/admin/", filenames.AdminFilepath)
+	router.Static("/admin/", filepath.Join(filenames.ExecutablePath, "admin-www", "public"))
 }
