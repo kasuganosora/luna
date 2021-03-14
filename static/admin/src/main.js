@@ -3,6 +3,8 @@ import App from './App.vue'
 import router from './router'
 import './plugins/element.js'
 import store from './store'
+import moment from 'moment'
+import 'moment/locale/zh-cn'
 
 Vue.config.productionTip = false
 
@@ -13,6 +15,13 @@ const mounted = () => {
     self.$store.state.screenHeight = document.documentElement.clientHeight;
   }
 }
+
+// 中文简体
+moment.locale('zh-cn');
+window.ss = moment;
+Vue.filter("fromNow", function (time) {
+  return moment(time).fromNow()
+})
 
 window.app = new Vue({
   router,

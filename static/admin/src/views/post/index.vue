@@ -52,8 +52,8 @@
             <el-tag v-if="scope.row.status === 'deleted'">已删除</el-tag>
           </el-row>
           <el-row>
-            <span v-if="scope.row.status === 'published'">{{scope.row.published_at.toDateString()}}</span>
-            <span v-if="scope.row.status !== 'published'">{{scope.row.created_at.toDateString()}}</span>
+            <span v-if="scope.row.status === 'published'">{{scope.row.published_at | fromNow}}</span>
+            <span v-if="scope.row.status !== 'published'">{{scope.row.created_at | fromNow}}</span>
           </el-row>
         </template>
       </el-table-column>
