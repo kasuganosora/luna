@@ -4,6 +4,8 @@ import VueRouter from 'vue-router'
 const routes = [
     {path: '/', component: () => import('@/views/index'), hidden: true},
     {path: '/posts', component: () => import('@/views/post/index'), hidden: true},
+    {path: '/posts/:id', component: ()=> import('@/views/post/editor'), hidden: true, name: 'editPost'},
+    {path: '/posts/new', component: ()=> import('@/views/post/editor'), hidden: true, name: 'createPost'},
     {
         path: '/login',
         component: () => import('@/views/login'),

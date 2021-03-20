@@ -1,7 +1,7 @@
 <template>
   <div id="posts-list-page">
     <el-header>
-      <h1>文章 <el-button size="small">写文章</el-button></h1>
+      <h1>文章 <el-button size="small" @click="$router.push('/posts/new')">写文章</el-button></h1>
     </el-header>
     <!-- header toolbox 1 start -->
     <el-row type="flex" :gutter="20">
@@ -26,7 +26,11 @@
     <!-- post table start -->
     <el-table stripe ref="multipleTable" style="width: 100%" :data="tableData">
       <el-table-column type="selection" width="55" />
-      <el-table-column label="标题" prop="title" />
+      <el-table-column label="标题">
+        <template slot-scope="scope">
+          <router-link :to="{ name: 'editPost', params: { id: scope.row.id }}">{{scope.row.title}}</router-link>
+        </template>
+      </el-table-column>
       <el-table-column label="作者">
         <template slot-scope="scope">
           <el-link href="#" target="_blank">{{scope.row.author.name}}</el-link>
@@ -74,6 +78,7 @@
 <script>
 const data = [
   {
+    id: 1,
     title: "网约车大数据杀熟收“苹果税”？复旦副教授花5万多元打车给答案",
     author: {id:123, name:"作者名字"},
     catalogs: [
@@ -89,6 +94,7 @@ const data = [
     created_at: new Date()
   },
   {
+    id: 2,
     title: "美网友围观SpaceX火箭爆炸现场 意外发现一只机器狗",
     author: {id:123, name:"作者名字"},
     catalogs: [
@@ -105,6 +111,7 @@ const data = [
     published_at: new Date("2017-01-02 12:31:59"),
   },
   {
+    id: 3,
     title: "汉服竟如此赚钱？90后入坑花费数十万狂购700套，山东这个小镇赚翻了",
     author: {id:123, name:"作者名字"},
     catalogs: [
