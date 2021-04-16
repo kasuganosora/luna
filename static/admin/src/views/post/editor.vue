@@ -36,7 +36,11 @@
                 <el-button v-else class="button-new-tag" size="small" @click="showNewTagInput">+ 新标签</el-button>
             </el-form-item>
             <!-- 链接设定 -->
+          <el-form-item label="链接设定">
+            <el-input v-model="post.slug" placeholder="链接设定,不输入则保持默认"></el-input>
+          </el-form-item>
             <!-- meta -->
+          <MetaInput v-model="post.meta"></MetaInput>
             <!-- 提交工具栏 -->
 
         </el-form>
@@ -45,7 +49,11 @@
 
 <script>
     import Catalog from '../../service/Catalog'
+    import MetaInput from "@/components/MetaInput";
     export default {
+      components: {
+        MetaInput
+      },
         data(){
           return {
               catalogs: Catalog.getCascaderFormat(),
@@ -55,7 +63,13 @@
                   title: "标题是什么",
                   markdown:"# 这是标题",
                   catalog_id: null,
-                  tags:["标签1","标签2"]
+                  tags:["标签1","标签2"],
+                  slug: "http://www.xxx.com/233.html",
+                  meta: {
+                    property1: "attr1",
+                    property2: "attr2",
+                    property3: "attr3",
+                  }
               }
           }
         },

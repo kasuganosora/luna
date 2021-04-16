@@ -8,6 +8,7 @@ import 'moment/locale/zh-cn'
 import mavonEditor from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
 
+
 Vue.config.productionTip = false
 
 const mounted = () => {
@@ -26,6 +27,7 @@ Vue.filter("fromNow", function (time) {
 })
 
 Vue.use(mavonEditor)
+
 
 window.app = new Vue({
   router,
