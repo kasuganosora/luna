@@ -42,6 +42,9 @@
             <!-- meta -->
           <MetaInput v-model="post.meta"></MetaInput>
             <!-- 提交工具栏 -->
+          <div class="form-foot">
+
+          </div>
 
         </el-form>
     </div>
