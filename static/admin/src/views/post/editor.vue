@@ -6,7 +6,7 @@
             </el-form-item>
             <!--  内容 -->
             <el-form-item>
-                <mavon-editor v-model="post.markdown"/>
+                <mavon-editor v-model="post.markdown" @imgAdd="updateImage" @imgDel="deleteImage"/>
             </el-form-item>
             <!-- 分类 -->
             <el-form-item label="分类">
@@ -42,10 +42,11 @@
             <!-- meta -->
           <MetaInput v-model="post.meta"></MetaInput>
             <!-- 提交工具栏 -->
-          <div class="form-foot">
-
+          <div class="form-footer">
+            <el-button type="primary" v-on:click="submit(post)">保存</el-button>
+            <el-button type="info" v-on:click="publish(post)" v-if="post.status !== 'published'">发布</el-button>
+            <el-button type="danger" v-if="post.status === 'published' || post.status === 'draft'">删除</el-button>
           </div>
-
         </el-form>
     </div>
 </template>
@@ -68,6 +69,7 @@
                   catalog_id: null,
                   tags:["标签1","标签2"],
                   slug: "http://www.xxx.com/233.html",
+                  status: "draft",
                   meta: {
                     property1: "attr1",
                     property2: "attr2",
@@ -94,6 +96,18 @@
                 this.newTagInputVisible = false;
                 this.newTag = '';
             },
+
+            updateImage(pos, file){
+              // TODO https://github.com/hinesboy/mavonEditor
+            },
+            deleteImage(pos, file){},
+
+            submit(post){
+              console.log(post)
+            },
+            publish(post){
+            console.log(post)
+          },
         }
     }
 </script>

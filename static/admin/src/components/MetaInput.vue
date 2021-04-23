@@ -143,6 +143,11 @@ export default {
 </script>
 
 <style scoped>
+  .input-meta{
+    position: relative;
+    padding-left: 10px;
+  }
+
   .meta-value {
     display: inline-block;
     width: 80%;
